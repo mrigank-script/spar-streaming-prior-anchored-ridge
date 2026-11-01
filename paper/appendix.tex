@@ -183,7 +183,7 @@ At the refresh equilibrium of Theorem~\ref{thm:cadence} the cycle-averaged predi
   + \sum_i \mu_i\Bigl(\frac{\nu_i}{\omega}+\Delta_k(s_i)\Bigr)^2 + O(k^2\nu^2s^2),
 \]
 with $\Psi$ and $\Delta_k$ as in Theorem~\ref{thm:cadence}.
-In the quasi-static regime $1 \ll k\omega \ll 1/s$, $\Psi(s_i,r_k)=(1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i)=o(\nu_i/\omega)$, so
+At the runtime cadence the surrogate is justified by the variance lower bound $(1-s_i)^2 \le \Psi \le 1$ and the bounded finite-$k$ residual (Step~0); in the quasi-static regime $1 \ll k\omega \ll 1/s$, $\Psi(s_i,r_k)=(1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i)=o(\nu_i/\omega)$, so
 \begin{equation}
 \label{eq:app-window-risk}
   R(\omega) \;=\; c'\,\frac{\omega}{2 - \omega} \;+\; \frac{\nu^2_\Sigma}{\omega^2} + o(1),
@@ -199,10 +199,12 @@ and overestimating the window is safe, mirroring Proposition~\ref{prop:minimax}.
 \end{restated}
 
 \begin{proof}[Proof of Theorem~\ref{thm:window}]
-\textbf{Step 0 (finite cadence to the quasi-static form).}
-The finite-cadence risk \eqref{eq:app-window-risk} is the combination of Theorem~\ref{thm:cadence}'s two exact steady-state objects: the per-direction variance is $v_i\Psi(s_i,r_k)$ with $v_i=\sigma^2/(n_{\mathrm{eff}}\mu_i)$, and the per-direction lag is $\nu_i/\omega+\Delta_k(s_i)$; the within-cycle fluctuation contributes the $O(k^2\nu^2s^2)$ term derived in Appendix~\ref{app:cadence}.
-In the regime $1\ll k\omega\ll 1/s$ we have $r_k=(1-\omega)^k\le e^{-\omega k}\to 0$, so $\Psi(s_i,r_k)=(1-s_i)^2(1+O(s_i^2+r_k))$, while $\Delta_k(s_i)=O(s_i\nu k)=o(\nu_i/\omega)$ because $s_i k\omega\to 0$.
-Substituting into the finite-cadence risk gives the reduced form \eqref{eq:app-window-risk}; the remainder is $o(1)$ uniformly over the regime.
+\textbf{Step 0 (finite cadence to the surrogate).}
+The finite-cadence risk \eqref{eq:app-window-risk} combines Theorem~\ref{thm:cadence}'s two exact steady-state objects: the per-direction variance is $v_i\Psi(s_i,r_k)$ with $v_i=\sigma^2/(n_{\mathrm{eff}}\mu_i)$, and the per-direction lag is $\nu_i/\omega+\Delta_k(s_i)$; the within-cycle fluctuation contributes the $O(k^2\nu^2s^2)$ term derived in Appendix~\ref{app:cadence}.
+Because $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for all $r_k \in [0,1)$ (\texttt{refresh\_variance\_lb}), the frozen-anchor surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ lower-bounds the exact cycle-averaged variance term at every cadence, and $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$ by Jensen; the runtime plug-in therefore underestimates the variance coefficient, returning a window no smaller than the exact-optimal one---the over-forgetting, safety-asymmetric direction of Step~4.
+The finite-cadence lag residual is bounded at the runtime range: with $b(s)=s(2-s)/(1-s)^2$ and $k\omega \le 1/2$, $\Delta_k(s_i)=s_i\nu_i k\bigl(b(s_i)+\tfrac12\bigr)\le \tfrac12 s_i\bigl(b(s_i)+\tfrac12\bigr)\nu_i/\omega$, a vanishing fraction of the leading lag ($\le 0.4\%$ for $s_i\le 0.1$ at $k\omega=0.5$) whose prediction cost $\mu_i\Delta_k(s_i)^2$ is concentrated in weakly excited directions.
+Numerically, over $k\omega \in [0.005,0.5]$ the surrogate's cubic minimizer is within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ ($5.2\%$ for $s_i \le 0.3$), with the largest gaps at the window floor (\texttt{diagnostics.py --diag subopt}; \texttt{results/window\_subopt.csv}).
+In the quasi-static limit $1 \ll k\omega \ll 1/s$, $r_k=(1-\omega)^k \le e^{-\omega k} \to 0$, so $\Psi(s_i,r_k)=(1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i)=o(\nu_i/\omega)$; both corrections vanish and the reduced form \eqref{eq:app-window-risk} is exact, with remainder $o(1)$ uniformly over the regime.
 
 \textbf{Step 1 (risk decomposition).}
 For exponential weights $\alpha^k$ the effective sample count of the accumulator is
@@ -1269,7 +1271,7 @@ The ablation (\texttt{scripts/revision\_runs.py --suite ablation}) runs the pred
 Removing the window estimator (fixed $\omega$) costs $+189\%$ overall MSE, removing the two-scale residual detector $+190\%$, and removing the pull-identity refresh $+189\%$; setting $\gamma = 0.5$ costs $+560\%$, which measures the $\gamma = 1$ principle of Appendix~\ref{app:proof-dominance}.
 Freezing the strength estimator to its warm-up value \emph{lowers} overall MSE by $2.2\%$ on these configurations, and removing the variance-floor subtraction costs $+1.7\%$ under the nominal cap, with the undebiased estimator pinning the window at its cap as Theorem~\ref{thm:window} predicts.
 The three-way dissociation in Table~\ref{tab:ablation} localizes the prior-immunity mechanism: freezing the spectral anchor refresh costs $2.2\times$ on the warm-prior configurations and $7.4\times$ on the adversarial ones (adversarial early MSE $47.0$ vs.\ $16.4$), whereas freezing $\rho$ leaves both within $2.6\%$.
-Prior immunity is therefore carried by the refresh, and the strength estimator's role is the drift-onset conflict response measured in Appendix Figure~\ref{fig:cliffdials}.
+Prior immunity is therefore carried by the refresh, and the strength estimator's role is the drift-onset conflict response measured in Appendix Figure~\ref{fig:cliffdials}---it matters only when the warm-up prior scale is unknown, where it guards against an oversized anchor.
 An alternating-trust diagnostic probes the strength estimator's average-case value directly (\texttt{diagnostics.py} \texttt{--diag alt\_trust}: the target switches every 500 steps between a noisy revisit of the anchor and a drifted target, two spectra, 5 seeds): the adaptive rule attains $6.79$ overall MSE against $6.64$--$7.00$ for pinned strengths spanning three orders of magnitude ($10^{-3}$ to $1$)---a $\pm 3\%$ spread, because the anchor \emph{refresh}, not the strength estimator, carries the phase-to-phase adaptation.
 
 \begin{table}[h]
@@ -1339,7 +1341,8 @@ The pre-drift MSE reported in Section~\ref{sec:experiments} ($1.01$--$1.14 \time
 
 \subsection{Per-step cost}
 Table~\ref{tab:app-ops} reports the per-step wall-clock cost of the closed-form methods at $D = 2048$ (fp64 CPU, \texttt{scripts/bench\_ops.py}; run alone for clean timing).
-The cached-basis per-direction head is $O(D^2)$ per step with $O(D^3)$ at refreshes; the scalar method solves exactly at $O(D^3)$ per step.
+The cached-basis per-direction head is $O(D^2)$ per step with $O(D^3)$ at refreshes; the scalar method solves the anchored system exactly at $O(D^3)$ per step, and its spectral refresh reuses the solve's factorization in $O(D^2)$ (Section~\ref{sec:method-solve}).
+The information form deliberately trades the covariance recursion's $O(D^2)$ rank-one update for a factorization that does not wind up on rank-deficient spectra (Proposition~\ref{prop:windup}); where per-step cost dominates, the cached-basis head is the intended path.
 
 \begin{table}[h]
 \centering
@@ -1480,7 +1483,7 @@ The metric is balanced accuracy; with $n = 9$ subjects per dataset we report pai
 \centering
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
-\renewcommand{\arraystretch}{0.80}
+\renewcommand{\arraystretch}{0.86}
 \caption{BCI IV cross-session, balanced accuracy (mean $\pm$ s.d.\ over 9 subjects per dataset).
 Supervised online protocol for adaptive methods; classical methods are static. $^{\mathrm{T}}$Session-level Euclidean alignment from the unlabeled evaluation session (transductive); the online-EA row is strictly causal.
 Highest value per column in bold.}

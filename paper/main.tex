@@ -40,10 +40,10 @@ DLDAV Model School, Shalimar Bagh\\
 \raggedbottom
 \maketitle
 \begingroup
-\renewcommand\thefootnote{}\footnote{LLM use: the Lean 4 formalization, the
-experimental code, and the \LaTeX{} formatting of this PDF were developed with
-GLM-5.3 and DeepSeek V4.1 Flash assistance; all results were independently
-verified by the author.}
+\renewcommand\thefootnote{}\footnote{The author designed the method, implemented
+the system, ran the experiments, and verified all results. LLM assistants
+(GLM-5.3, DeepSeek V4.1 Flash) were used for coding, the Lean 4 formalization,
+and \LaTeX{} preparation.}
 \endgroup
 
 \begin{abstract}
@@ -83,7 +83,7 @@ The formula matches Monte Carlo within $5\%$ on the $30$ full-rank operating poi
 The algebraic core, the finite-cadence refresh chain, the OGD and Hedge regret bounds, and the coupled contraction are formalized in Lean 4: 67 declarations, no \texttt{sorry}, and only the three standard axioms (Appendix~\ref{app:lean}).
 
 \item \textbf{A calibrated streaming method.}
-SPAR estimates the window and strength online from residual and anchor-disagreement statistics; the strength lower bound is an onset guard, not a continuous tracking rule.
+The forgetting window and the anchor strength are estimated online from residual and anchor-disagreement statistics; prior immunity is carried by the direction-selective refresh $\beta_i = 1 - s_i$ (one $\rho$ sets it), and the strength rule enters as an onset guard when the warm-up prior scale is unknown, not as a continuous tracking rule.
 A Hedge composition over leaky windows, the frozen anchor, and the SPAR-Pull trajectory satisfies a no-regret bound under bounded losses (Proposition~\ref{prop:ocowrap}).
 
 \item \textbf{Evidence that the law transfers.}
@@ -267,14 +267,27 @@ At the refresh equilibrium of Theorem~\ref{thm:cadence}, the cycle-averaged pred
 \end{aligned}
 \]
 with $\Psi(s,r) = 1 - \frac{2s(1+s-s^2)(1-r)}{(1+a)(1-ar)}$ and $\Delta_k(s) = s\nu k\bigl(\frac{a}{1-a}+\frac12\bigr)$.
-In the quasi-static two-time-scale regime $1 \ll k\omega \ll 1/s$ (so $s \ll 1/(k\omega) \ll 1$), $\Psi(s_i,r_k) = (1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i) = o(\nu_i/\omega)$, hence
+At the runtime cadence $1 \ll k\omega$ need not hold---at the grid defaults $k\omega \in [0.005, 0.5]$---so the reduced target is justified by two monotone facts rather than by that limit.
+\emph{(i) Variance lower bound.}
+Since $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for every $r_k \in [0,1)$ (Theorem~\ref{thm:cadence}), the surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ with $c' = \sigma^2 d_{\mathrm{eff}}(\rho)$ lower-bounds the exact variance term at every cadence; Jensen's inequality gives $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$, so the runtime plug-in is itself a lower bound,
+\[
+  \hat c'_t \;=\; \sigma^2 D(1-\bar s_t)^2 \;\le\; \sigma^2\,d_{\mathrm{eff}}(\rho) \;\le\; \sigma^2 \sum_{i=1}^D \Psi(s_i,r_k).
+\]
+Its minimizer $\omega^* = (4\nu^2_\Sigma/c')^{1/3}$ is at least the exact-optimal window (a smaller coefficient returns a larger $\omega$, the over-forgetting direction), which is the cheap side of the safety asymmetry of Proposition~\ref{prop:minimax}.
+\emph{(ii) Finite-cadence lag residual.}
+With $b(s) = s(2-s)/(1-s)^2$ and $k\omega \le 1/2$, the residual of Theorem~\ref{thm:cadence} obeys
+\[
+  \Delta_k(s_i) = s_i\,\nu_i\,k\bigl(b(s_i)+\tfrac12\bigr) \;\le\; \tfrac12\,s_i\bigl(b(s_i)+\tfrac12\bigr)\,\frac{\nu_i}{\omega},
+\]
+a fixed fraction of the leading lag that vanishes as $s_i \to 0$, whose prediction cost $\mu_i\,\Delta_k(s_i)^2$ is $\mu_i$-weighted and concentrated in weakly excited directions.
+Over the runtime range $k\omega \in [0.005, 0.5]$ the surrogate's cubic minimizer stays within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ (within $5.2\%$ for $s_i \le 0.3$, the largest gaps at the window floor; Appendix~\ref{app:proof-window}).
+In the quasi-static limit $1 \ll k\omega \ll 1/s$ (so $s \ll 1/(k\omega) \ll 1$) both corrections vanish identically---$\Psi(s_i,r_k) = (1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i) = o(\nu_i/\omega)$---and the reduced form is exact:
 \[
   R_k(\omega,s) = c'\,\frac{\omega}{2-\omega} + \frac{\nu^2_\Sigma}{\omega^2} + o(1),
   \qquad c' = \sigma^2\,d_{\mathrm{eff}}(\rho),
   \qquad d_{\mathrm{eff}}(\rho) := \sum_{i=1}^D (1-s_i)^2,
 \]
 which is strictly convex with unique minimizer $\omega^* = (4\nu^2_\Sigma/c')^{1/3}$ to leading order (for $\nu_\Sigma=0$ the optimum is the boundary $\omega^*=0$).
-Since $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for every $r_k \in [0,1)$, the frozen-anchor plug-in $c'$ lower-bounds the exact variance at \emph{every} cadence, so the estimator errs toward larger windows---the conservative direction of Proposition~\ref{prop:minimax}; the regime above is sufficient for the clean leading-order form, not for the bound, and at the runtime operating point ($k\omega \lesssim 1$, $s_i \ll 1$) $c'$ stays numerically close to the exact coefficient (Appendix~\ref{app:proofs}).
 The runtime estimator uses the mean-field form $D(1-\bar s)^2$ (exact on isotropic spectra, conservative otherwise); it recovers the drift energy from the two-scale residual excess, $\widehat\nu^2_\Sigma = \max\bigl(0,\,(\widehat E_t - \hat c'\,\omega/(2-\omega))\,\omega^2\bigr)$ with $\widehat E_t = \widehat\sigma^2_{\mathrm{fast}} - \widehat\sigma^2_{\mathrm{slow}}$, and under stationarity $\widehat E_t \to 0$ in expectation, pinning $\omega$ at $\omega_{\min}$ (Appendix~\ref{app:proofs}).
 \end{theorem}
 
