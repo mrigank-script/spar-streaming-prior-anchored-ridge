@@ -1,0 +1,531 @@
+\documentclass[10pt]{article}
+% TMLR style file (https://github.com/JmlrOrg/tmlr-style-file).
+% Default = anonymous submission.  For the named camera-ready, compile with
+% \usepackage[preprint]{tmlr} instead.
+\usepackage{tmlr}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,multirow,graphicx,subcaption}
+\usepackage{microtype}
+\usepackage{needspace}
+\usepackage[hidelinks]{hyperref}
+\graphicspath{{figures/}{../results/figures/}}
+\setlength{\emergencystretch}{1.5em}
+
+% Theorem machinery (kernel \newtheorem; amsthm unavailable in this TeX tree).
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\newenvironment{proof}[1][Proof]{%
+  \par\noindent\textbf{#1.}\hspace{0.4em}\ignorespaces
+}{%
+  \hfill\ensuremath{\square}\par\medskip
+}
+\newcounter{algorithm}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\spar}{\textsc{spar}}
+
+\title{Finite-Cadence Refresh Equilibria for Streaming\\
+Prior-Anchored Ridge:\\
+A Closed-Form Forgetting Window and Spectral Correction}
+\author{Mrigank Shekhar Singh\\
+DLDAV Model School, Shalimar Bagh\\
+\texttt{mrigank.codes@gmail.com}
+}
+\date{October 2026}
+
+\begin{document}
+\raggedbottom
+\maketitle
+\begingroup
+\renewcommand\thefootnote{}\footnote{LLM use: the Lean 4 formalization, the
+experimental code, and the \LaTeX{} formatting of this PDF were developed with
+GLM-5.3 and DeepSeek V4.1 Flash assistance; all results were independently
+verified by the author.}
+\endgroup
+
+\begin{abstract}
+Recursive estimators on drifting streams must forget stale data fast enough to track the target, yet slowly enough to average out noise.
+For prior-anchored ridge regression this balance has a closed-form optimum: per eigen-direction the anchored solve is a convex combination of the data solution and the prior, with weight $s_i=\rho/(\mu_i+\rho)$.
+We derive the finite-cadence refresh equilibrium of the resulting recursion: at cadence $k$ the solution lags the pure-leaky path by a closed-form $\Delta_k(s)$, and its variance is reduced by an explicit factor $\Psi(s,r_k)$.
+Minimizing the cycle-averaged risk gives the optimal forgetting rate $\omega^*=(4\nu^2_\Sigma/c')^{1/3}$ with $c'=\sigma^2d_{\mathrm{eff}}(\rho)$, together with the plug-in anchor strength $\rho^*=\sigma^2/(n\delta^2)$.
+A random-matrix deterministic equivalent extends both laws to finite dimension, where the anchor is renormalized to $\rho_{\mathrm{eff}}=\rho(e^{\zeta q}-1)/(\zeta q)$; on full-rank spectra it matches simulation within $5\%$ at fixed operating points and within $13\%$ at the method's own operating points, the conflict increment is accurate within $11\%$, and we delimit the rank-deficient boundary.
+The resulting method, SPAR, calibrates its window and strength from streaming residuals: the conflict-calibrated strength falls on detected drift, guarding against an oversized warm-up anchor, while a drift-active lower bound on the strength keeps the short-window solve well conditioned.
+On a 27-configuration factorial grid the calibrated window opens on detected drift, as the law predicts, and the method never diverges; the grid-default configuration transfers unchanged to an hourly electricity stream, and a reduced-range head transfers to BCI IV 2b. The core algebra, refresh chain, and regret bounds are formalized in Lean 4.
+\end{abstract}
+
+\section{Introduction}
+A streaming estimator that never forgets accumulates lag under drift; one that forgets too fast amplifies noise.
+Gradient-based test-time adaptation \citep{sun2020,wang2021tent} resolves this balance implicitly, at the cost of a gradient channel, per-dataset hyperparameter selection, and imprecise guarantees.
+For prior-anchored ridge regression the balance is explicit: per eigen-direction the anchored solve decomposes as $W_i - w_i = (1-s_i)(\widehat w_i - w_i) + s_i(G_i - w_i)$ with $s_i = \rho/(\mu_i + \rho)$.
+The algebra is standard---ridge as MAP with a prior-centered penalty \citep{hoerl1970,rasmussen2006,li2018l2sp}---but it turns hyperparameter selection into a closed-loop estimation problem: measured conflict lowers the anchor strength so that fresh data dominates, and a rising drift-rate estimate opens the forgetting window.
+
+This paper studies the resulting recursion rather than a particular tuning heuristic.
+The central result is a finite-cadence refresh equilibrium: at cadence $k$ the moving-frame anchor offset follows an affine recursion whose fixed point gives the exact tracking lag and whose variance factor gives the retained noise reduction.
+Minimizing the cycle-averaged risk yields the optimal forgetting window in closed form.
+A separable-covariance deterministic equivalent then extends the law to finite dimension, where the finite window renormalizes the anchor strength and amplifies the risk by a scalar factor.
+The calibrated method, SPAR, is the algorithmic instantiation of these results; the experiments test the predictions of the theory on synthetic and real streams.
+
+\needspace{4\baselineskip}
+\textbf{Contributions.}
+\begin{enumerate}
+\item \textbf{A finite-cadence theory of anchored forgetting.}
+The pull identity turns the anchor strength into a per-direction interpolation weight.
+The refresh equilibrium gives the exact lag $\Delta_k(s)$ and variance factor $\Psi(s,r_k)$ (Theorem~\ref{thm:cadence}); minimizing the cycle-averaged risk yields the closed-form window $\omega^*=(4\nu^2_\Sigma/c')^{1/3}$ (Theorem~\ref{thm:window}) and the plug-in strength $\rho^*=\sigma^2/(n\delta^2)$ (Proposition~\ref{prop:conflict}).
+
+\item \textbf{A finite-dimensional spectral correction.}
+The separable-covariance deterministic equivalent gives the retention $q$, the renormalized anchor $\rho_{\mathrm{eff}}$, the variance functional $\Upsilon$, and the full excess risk with its $1/(1-\Upsilon)$ correction (Theorem~\ref{thm:rmt}).
+The formula matches Monte Carlo within $5\%$ on the $30$ full-rank operating points of the $45$-point grid, within $13\%$ at the method's own operating points, and within $0.6$--$11\%$ for the conflict increment; the rank-deficient boundary is stated explicitly.
+
+\item \textbf{A formalized core.}
+The algebraic core, the finite-cadence refresh chain, the OGD and Hedge regret bounds, and the coupled contraction are formalized in Lean 4: 67 declarations, no \texttt{sorry}, and only the three standard axioms (Appendix~\ref{app:lean}).
+
+\item \textbf{A calibrated streaming method.}
+SPAR estimates the window and strength online from residual and anchor-disagreement statistics; the strength lower bound is an onset guard, not a continuous tracking rule.
+A Hedge composition over leaky windows, the frozen anchor, and the SPAR-Pull trajectory satisfies a no-regret bound under bounded losses (Proposition~\ref{prop:ocowrap}).
+
+\item \textbf{Evidence that the law transfers.}
+On the 27-configuration grid the calibrated window responds to drift in the direction the law prescribes, and the calibrated methods are competitive with the strongest oracle-free baselines without diverging in any configuration.
+The grid-default configuration transfers unchanged to an hourly electricity stream, and a reduced-range head transfers to BCI IV 2b; Section~\ref{sec:experiments} reports the numbers and Section~\ref{sec:limitations} the boundary conditions.
+\end{enumerate}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.95\textwidth]{F1_schematic}
+\caption{The SPAR streaming loop.
+(1) The stream enters (2) leaky statistics and (3) the anchored solve (Algorithm~\ref{alg:spar-pull}), which (4) predicts.
+(5) The residual $r_t$ feeds fast and slow moving averages whose positive difference drives (6) the two online estimators ($\rho^*$ and $\omega^*$), which feed the solve and the statistics.
+(7) The anchor refreshes at $\beta_i = 1-s_i$; one $\rho$ couples pull and refresh.
+Panel (b): per-direction pull weights.}
+\label{fig:schematic}
+\end{figure}
+
+\section{Related Work}
+\textbf{Analytic continual learning.}
+The Analytic Class-Incremental Learning lineage \citep{zhuang2022acil,zhuang2023gkeal,zhuang2024dsal,zhuang2024gacl,tong2025anyssr,yan2025crossacl,zhang2025mdaa,kim2025ulta} replaces gradient-based class-incremental learning with closed-form recursive updates on frozen features; these methods address a stationary target, whereas the present setting has a drifting target and an adaptive regularization strength.
+
+\textbf{Interpolated adaptation.}
+WiSE-FT established frozen-to-adapted interpolation with a single scalar \citep{wortsman2022wiseft}; the pull identity generalizes it per direction ($s_i = \rho/(\mu_i + \rho)$ in place of one $\alpha$), Proposition~\ref{prop:conflict} characterizes when interpolation reduces risk, and Section~\ref{sec:eeg} compares against it directly.
+
+\textbf{Forgetting and state space.}
+When the nominal window $1/(1-\lambda)$ of leaky RLS drops below the input dimension, the covariance recursion loses rank and the estimate diverges \citep{sayed2008,bierman1977}.
+Directional forgetting \citep{kulhavy1984,cao2000} and its subspace-information variants \citep{lai2024sift} preserve rank along excited directions; scalar EMA teachers \citep{tarvainen2017} update every direction at one fixed rate, and per-direction momentum \citep{hong2026} at excitation-dependent rates.
+The SPAR refresh is direction-selective with no added hyperparameter: each direction's refresh rate is $1-s_i$, the complement of its pull weight.
+Variable forgetting factor RLS \citep{fortescue1981,paleologu2008} automates the window from the squared residual---the same statistic used here---but retains the covariance recursion and inherits its instability (Section~\ref{sec:experiments}).
+AROW \citep{crammer2009arow} and random-walk Kalman filters \citep{kalman1960,sayed1994} are the nearest online relatives; the estimated-noise Kalman filter is the strongest oracle-free baseline on the grid (Table~\ref{tab:grid}).
+Composite drift-triggered adaptations are surveyed in \citet{gama2014drift}.
+
+\textbf{Regret and two-time-scale analysis.}
+The residual-driven estimators are coupled stochastic approximation: the accumulator tracks a moving target while its step size is estimated from the same residuals, for which two-time-scale conditions and drift tracking are classical \citep{benveniste1990,kushner2003,borkar2008}.
+The contribution here is the closed-form target and the verified contraction.
+Projected gradient and Hedge arguments are standard \citep{zinkevich2003}; the composition and its basis dependence are made explicit in Proposition~\ref{prop:ocowrap}.
+
+\textbf{Random-matrix limits.}
+The finite-\(D\) correction uses the separable-covariance deterministic equivalent \citep{silverstein1995,rubio2011,hachem2007}.
+The nearest prior analysis is the large-system exponentially windowed RLS study of \citet{xiao2005}, which has no anchor, per-direction pull, refresh, or online calibration; the unweighted-batch ridge asymptotics \citep{hastie2022,pafka2004} do not carry the finite-window renormalization.
+
+\section{Method}
+We call the resulting solver family SPAR (Streaming Prior-Anchored Ridge), the streaming instantiation of the Anchored Analytic Learning (AAL) framework.
+
+\textbf{Notation.}
+$\omega \in (0,1)$ is the scalar forgetting rate and $n_{\mathrm{eff}} = (2-\omega)/\omega$ its effective sample count; $\widehat w_t$ and $w^*$ are parameter vectors (we write $\widehat w_t$ for the minimum-ridge data solve and reserve $W_t$ for the anchored solution); $\pi_{i,t}$ are Hedge weights; $\varsigma_t$ is the Hedge learning rate; $\iota$ is the OGD step; $\zeta = D\omega$ is the aspect ratio of Theorem~\ref{thm:rmt}. For the strength estimator, $d_{\mathrm{act}} = \#\{i:\mu_i(\bar A_t) > 10^{-8}\}$ is the active dimension, $\bar\mu_t = \mathrm{tr}(\bar A_t)/d_{\mathrm{act}}$ the active-mean excitation, and $G_{\mathrm{ref}}$ the slow reference anchor updated every $5k$ steps. Experiments label windows by the nominal $1/(1-\lambda)$, which differs from $n_{\mathrm{eff}}$ by the factor $2-\omega$.
+
+\textbf{Anchored solve.}
+\label{sec:method-solve}
+Let $\phi_t = \phi(x_t)$ denote the feature vector of the incoming sample.
+With optional forgetting factor $\alpha$, the learner updates the sufficient statistics via $A \leftarrow \alpha A + \phi\phi^\top$, $B \leftarrow \alpha B + \phi y$, and $n \leftarrow \alpha n + 1$.
+The anchored solve is
+\[
+  W = (A + n\rho I)^{-1}(B + n\rho G),
+\]
+with anchor $G$ and strength $\rho$.
+In the eigenbasis of $\bar A = A/n$ with excitation $\mu_i$, each coordinate is a scalar ridge solve, which yields the per-direction decomposition we call the \emph{pull identity} (the $w_i$ and $\widehat w_i$ are per-direction weight coordinates; the scalar forgetting rate $\omega$ of Section~\ref{sec:theory} is a separate object):
+\begin{equation}
+\label{eq:pull}
+  W_i - w_i = (1-s_i)\,(\widehat w_i - w_i) + s_i\,(G_i - w_i),
+  \qquad s_i = \frac{\rho}{\mu_i + \rho};
+\end{equation}
+Figure~\ref{fig:geometry} shows its geometry.
+The solve in Equation~\eqref{eq:pull} is the $\gamma = 1$ case of the generalized prior scaling $W = (A + n\rho I)^{-1}(B + n\rho\gamma G)$: $\gamma = 1$ is the exact prior-centered MAP and $\gamma < 1$ adds a shrinkage bias (Section~\ref{sec:experiments}); the prior precision $\tau_0$ of Appendix~\ref{app:proofs} is a separate symbol.
+
+\textbf{Operator form.}
+Both identities are basis-free: with the resolvent shrinkage operator $S_t(\rho) := \rho\,(\bar A_t + \rho I)^{-1}$ (so $0 \prec S_t(\rho) \preceq I$ and $I - S_t(\rho) = \bar A_t(\bar A_t + \rho I)^{-1}$), Equation~\eqref{eq:pull} reads $W_t - w^* = (I - S_t) (\widehat w_t - w^*) + S_t (G_t - w^*)$ for any $\bar A_t \succeq 0$, without choosing a basis, assuming distinct eigenvalues, or restricting to finite dimension.
+The spectral refresh of the next paragraph, written per-direction as $\beta_i = 1 - s_i$, is likewise the operator identity $G \leftarrow (I - S_t)\,W + S_t\,G = W - \rho\,(\bar A_t + \rho I)^{-1}(W - G)$: since the factorization of $(\bar A_t + \rho I)$ is already available from the solve, the exact refresh can reuse it at $O(D^2)$ cost per refresh with no separate eigendecomposition (Algorithm~\ref{alg:spar-pull}'s \texttt{eigh} is the equivalent spectral realization used to expose the per-direction weights); this reduces the refresh cost, while the per-step solve remains $O(D^3)$ for the scalar method.
+
+\textbf{Spectral anchor refresh.}
+To prevent the anchor from becoming stale during sustained drift, $G$ is updated every $k$ steps along the eigenbasis $U$ of $\bar A$: in each eigendirection $i$, $G_{i} \leftarrow \beta_i W_{i} + (1-\beta_i) G_{i}$ with $\beta_i = 1 - s_i = \mu_i/(\mu_i + \rho)$.
+Because the prediction risk in direction $i$ scales with $\mu_i$, staleness along weakly excited eigendirections ($\beta_i \approx 0$) incurs negligible excess error; well-excited directions ($\beta_i \approx 1$) incorporate new information into the anchor rapidly.
+A single $\rho$ thus controls both the pull toward the anchor and its refresh rate.
+
+\textbf{Online calibration.}
+SPAR updates the window and the strength at each refresh block from fast and slow exponential moving averages of the squared prequential residual $r_t^2 = (y_t - \hat y_t)^2$; here $\omega$ is the forgetting rate, with effective memory $n_t \approx 1/\omega$ samples, so opening the window means increasing $\omega$.
+Under Proposition~\ref{prop:conflict}, the risk-minimizing anchor strength decreases inversely with the prediction-unit conflict $\widehat C^\Sigma_t = \max\{C^\Sigma_{\mathrm{ref}}, C^\Sigma_{\mathrm{resid}}, C^\Sigma_{\mathrm{floor}}\}$: $\rho^*_t = \bar\mu_t \widehat V^\Sigma_t/\widehat C^\Sigma_t$, with $\widehat V^\Sigma_t = \hat\sigma^2_t d_{\mathrm{act}}/n_t$ the prediction variance and every branch in $[y^2]$ (Appendix~\ref{app:hyper}).
+Formulating both branches in prediction units ensures that the estimator never inverts $\bar A_t$, is invariant to feature rescaling, and contributes nothing in dead directions. Section~\ref{sec:experiments} reports the covariate-shift behavior.
+Under Theorem~\ref{thm:window}, the forgetting window trades estimation variance against drift lag: $\omega^*_t = (4\widehat\nu^2_{\Sigma,t} / \hat c'_t)^{1/3}$, with $\hat c'_t = (1-\bar s_t)^2 \hat\sigma^2_t D$ and the drift energy $\widehat\nu^2_{\Sigma,t} = \max(0, (\widehat E_t - \hat c'_t \omega_t/(2-\omega_t))\omega_t^2)$, where $\widehat E_t = \hat\sigma^2_{\mathrm{fast},t} - \hat\sigma^2_{\mathrm{slow},t}$ isolates excess error above the stationary variance level, the subtraction required for a positive fixed point (Appendix~\ref{app:proofs}).
+The strength rule is an onset guard: its average effect is neutral, and its value is the temporary lower bound it places on $\rho$ when the residual detector fires (Section~\ref{sec:bridges}).
+Algorithm~\ref{alg:spar-pull} gives the complete step loop; apart from one fixed default control parametrization---the constants $k{=}10$, $h_f{=}30$, $\rho$-lower bound $0.02$, plus clip ranges and EMA horizons, shared by every configuration (Appendix~\ref{app:hyper})---all behavior adapts at runtime.
+
+\textbf{Estimator branches and solver variants.}
+Step~(iv) of the algorithm takes the maximum of three prediction-unit branches, all in $[y^2]$:
+\[
+\begin{aligned}
+C^\Sigma_{\mathrm{ref}} &= (G_{\mathrm{ref}} - \widehat w)^\top \bar A_t\,(G_{\mathrm{ref}} - \widehat w) - \widehat V^\Sigma, &
+C^\Sigma_{\mathrm{resid}} &= E_t, \\
+C^\Sigma_{\mathrm{floor}} &= \tfrac12\,\hat\sigma^2 d_{\mathrm{act}}/T_w, &
+\widehat V^\Sigma &= \hat\sigma^2 d_{\mathrm{act}}/n,
+\end{aligned}
+\]
+with $\widehat w = (\bar A_t + \rho_{\mathrm{ridge}} I)^{-1}\bar b_t$, where $\rho_{\mathrm{ridge}} = 10^{-6}$ is the fixed numerical ridge of the reference-branch data solve ($10^{-8}$ is the ridge used in the active-dimension and trace computations), and $\rho_{\min} = 0.02$ while the window is at least half open ($\omega_t \ge \tfrac12\omega_{\max}$), otherwise the stationary value $10^{-5}$, is the anchor-strength clip floor.
+The reference branch compares against the slow copy $G_{\mathrm{ref}}$ rather than the refreshed $G$, so the conflict does not collapse immediately after a refresh. The residual branch supplies the fast disengagement, and the floor branch is the irreducible warm-up conflict.
+No branch inverts $\bar A_t$, so the rule is invariant to feature rescaling and immune to the rank-deficient trace blow-up.
+The legacy parameter-unit form (with $\mathrm{tr}(\bar A^{-1})$) is reported only as an ablation (Appendix~\ref{app:hyper}).
+
+\refstepcounter{algorithm}\label{alg:spar-pull}
+\noindent\begin{minipage}{\textwidth}
+\hrule\vspace{3pt}
+\noindent\textbf{Algorithm \thealgorithm: SPAR-Pull}\quad{\footnotesize Inputs: a stream $(\phi_t,y_t)$, a warm-up length $T_w$, and a prior $G_0$; fixed constants $k$, $h_f$, $\rho_{\min}$, $\rho_{\max}$, $\eta_C$, and $\eta_\nu$.}\vspace{3pt}\hrule\vspace{3pt}
+{\footnotesize
+\textbf{Initialization.} Build the sufficient statistics $A$, $B$, and $n$, the anchor $G$, and the solve $W$ from the warm-up stream. Set $\sigma^2_0 = \mathrm{var}(r_{\mathrm{warm}})$.
+
+\textbf{Loop.} For $t = T_w,\dots,T$, execute Steps~(i), (ii), (vii), and~(viii) at every step, and Steps~(iii)--(vi) and~(ix) once per refresh block of $k$ steps, running Step~(ix) first since Steps~(iv)--(vi) use the eigenbasis.
+\begin{enumerate}
+\renewcommand{\labelenumi}{(\roman{enumi})}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\topsep}{2pt}
+\setlength{\partopsep}{0pt}
+\item Predict $\hat y_t = \phi_t^\top W$.
+\item Compute the residual $r_t = y_t - \hat y_t$, and update the fast and slow exponential moving averages $\sigma^2_{\mathrm{fast}}$ and $\sigma^2_{\mathrm{slow}}$ of $r_t^2$.
+\item Form the excess error $E_t = \max(0, \sigma^2_{\mathrm{fast}} - \sigma^2_{\mathrm{slow}})$. This quantity drives both the conflict estimator and the drift-energy estimator.
+\item Form the conflict estimate $\widehat C_t = \max\{C^\Sigma_{\mathrm{ref}}, C^\Sigma_{\mathrm{resid}}, C^\Sigma_{\mathrm{floor}}\}$ and the drift-energy estimate $\widehat\nu^2_t$ of Theorem~\ref{thm:window}. Then smooth both quantities as $\bar C \leftarrow (1-\eta_C)\bar C + \eta_C\widehat C_t$ and $\bar\nu^2 \leftarrow (1-\eta_\nu)\bar\nu^2 + \eta_\nu\widehat\nu^2_t$.
+\item Update the anchor strength as $\rho \leftarrow \mathrm{clip}(\bar\mu\widehat V^\Sigma/\bar C,\ \rho_{\min}(E_t),\ \rho_{\max})$.
+\item Update the forgetting rate as $\omega \leftarrow \mathrm{clip}((4\bar\nu^2/\hat c')^{1/3},\ \omega_{\min},\ \omega_{\max})$, and set $\alpha \leftarrow 1-\omega$.
+\item Update the sufficient statistics as $A \leftarrow \alpha A + \phi_t\phi_t^\top$, $B \leftarrow \alpha B + \phi_t y_t$, and $n \leftarrow \alpha n + 1$.
+\item Solve the anchored system $W \leftarrow (A + n\rho I)^{-1}(B + n\rho G)$.
+\item Every $k$ steps, compute $(\mu,U) \leftarrow \mathrm{eigh}(\bar A)$ and refresh the anchor as $G \leftarrow U[\mathrm{diag}(\beta_i)U^\top W + \mathrm{diag}(1-\beta_i)U^\top G]$. Every $5k$ steps, set $G_{\mathrm{ref}} \leftarrow G$.
+\end{enumerate}
+}
+\vspace{2pt}\hrule
+\end{minipage}
+
+The same loop defines the solver family used below.
+\emph{SPAR-Pull} is Algorithm~\ref{alg:spar-pull} (two estimators, one scalar $\rho$, exact $O(D^3)$ solve).
+\emph{SPAR-Pull-D} keeps a per-direction strength $\rho_i = \sigma^2/(n\delta_i^2)$ and caches the refresh eigenbasis, giving $O(D^2)$ per step with an $O(D^3)$ refresh every $k$ steps.
+\emph{SPAR-Pull-S} is the scalar-pull simplification on the data--anchor segment, used to isolate the regret guarantee.
+\emph{SPAR-EG} replaces the single solve by a Hedge mixture over five batch-solved leaky windows plus the frozen anchor; \emph{SPAR-EG$^+$} adds the SPAR-Pull trajectory as a sixth expert.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.68\textwidth]{F2_geometry}
+\caption{The pull identity (Equation~\eqref{eq:pull}): the excited direction ($s_1 = 0.15$) holds the data solution, the weakly excited direction ($s_2 = 0.8$) holds the anchor, so $W$ departs from the uniform-pull segment (dashed).}
+\label{fig:geometry}
+\end{figure}
+
+\section{Theoretical Analysis}
+\label{sec:theory}
+
+The section is organized around the refresh recursion.
+Lemma~\ref{lem:zerolag} establishes the continuous-refresh limit.
+Theorem~\ref{thm:cadence} gives the finite-cadence equilibrium, and Theorem~\ref{thm:window} minimizes the resulting risk to obtain the window law.
+Propositions~\ref{prop:conflict}--\ref{prop:windup} give the anchor calibration, the minimax and false-alarm guarantees, the regret wrappers, and the conditioning bound.
+Theorem~\ref{thm:rmt} is the finite-dimensional spectral correction, and Theorem~\ref{thm:closedloop} closes the loop with the coupled contraction.
+Theorems~\ref{thm:cadence} and~\ref{thm:window} are analyzed in the mean-field (population-design) model in which the random accumulator $\bar A_t$ is replaced by its expectation $\Sigma$; this is the model that yields the closed-form window target, and it is exact in the proportional limit $\zeta = D\omega \to 0$.
+Theorem~\ref{thm:rmt} supplies the finite-$D$ random-design correction at $\zeta > 0$; Appendix~\ref{app:proofs} states the two models explicitly and quantifies their gap ($\zeta \le 0.13$ on the pre-drift grid, up to $6.4$ during drift-phase adaptation).
+
+\begin{lemma}[Zero-lag refresh equilibrium]
+\label{lem:zerolag}
+Assume drift at constant rate $\nu$ per step along a direction with excitation $\mu$, forgetting rate $\omega$, and continuous anchor refresh.
+(i) The accumulator's implied data solution lags the target by exactly $\nu/\omega$.
+(ii) At the refresh equilibrium $G = W$ the anchored solution's lag equals the pure-leaky lag, independent of $s$; the anchor is inert for mean tracking.
+(iii) At refresh cadence $k$ an extra lag $\Delta_k(s)$ of Theorem~\ref{thm:cadence} appears, whose prediction cost is weighted by $\mu_i$ and therefore concentrates in weakly excited directions.
+\end{lemma}
+
+\begin{theorem}[Finite-cadence refresh equilibrium]
+\label{thm:cadence}
+Let $a = s(2-s) = 1 - (1-s)^2 \in (0,1)$ for $s \in (0,1)$, and let $r_k = \alpha^k \in [0,1)$ be the data-path noise correlation across one refresh cycle.
+At cadence $k$ with data-path lag $L$ (Lemma~\ref{lem:zerolag}) and target velocity $\nu$ per step, the moving-frame anchor offset follows the affine recursion
+\[
+  g_{m+1} \;=\; a\,g_m \;-\; (1-s)^2\,L \;-\; a\,\nu k,
+  \qquad a := s(2-s) = 1-(1-s)^2.
+\]
+The recursion contracts geometrically at rate $a \in (0,1)$ per cycle to the fixed point $g^* = -L - \nu k\,a/(1-a)$, and the cycle-averaged solution lags the pure-leaky path by $\Delta_k(s) = s\nu k\,(a/(1-a) + \tfrac{1}{2})$.
+The lag is linear in the cadence and vanishes as $s \to 0$.
+The steady-state solution variance is $v\,\Psi(s,r_k)$ with $\Psi(s,r_k) := 1 - 2s(1+s-s^2)(1-r_k)/((1+a)(1-a r_k)) \in [(1-s)^2,\,1]$ for all $s \in (0,1)$, $r_k \in [0,1)$: the variance reduction of Proposition~\ref{prop:conflict} survives at every finite cadence, vanishing at the inert continuous-refresh limit $r_k \to 1$ of Lemma~\ref{lem:zerolag}(ii) and largest at $r_k \to 0$, so the cadence trades lag against variance reduction (Appendix~\ref{app:proofs}).
+\end{theorem}
+
+\begin{theorem}[Finite-cadence optimal forgetting window]
+\label{thm:window}
+Let the target drift at constant rate $\nu_i$ in direction $i$ with prediction-units drift power $\nu^2_\Sigma = \sum_i \mu_i \nu_i^2$, let the refresh cadence be $k$, and set $r_k = (1-\omega)^k$ and $a_i = s_i(2-s_i)$.
+At the refresh equilibrium of Theorem~\ref{thm:cadence}, the cycle-averaged prediction risk at pull profile $s$ is
+\[
+\begin{aligned}
+  R_k(\omega,s) &= \sigma^2\,\frac{\omega}{2-\omega}\sum_{i=1}^D \Psi(s_i,r_k) \\
+  &\quad + \sum_{i=1}^D \mu_i\Bigl(\frac{\nu_i}{\omega} + \Delta_k(s_i)\Bigr)^2
+  + O(k^2\nu^2 s^2),
+\end{aligned}
+\]
+with $\Psi(s,r) = 1 - \frac{2s(1+s-s^2)(1-r)}{(1+a)(1-ar)}$ and $\Delta_k(s) = s\nu k\bigl(\frac{a}{1-a}+\frac12\bigr)$.
+In the quasi-static two-time-scale regime $1 \ll k\omega \ll 1/s$ (so $s \ll 1/(k\omega) \ll 1$), $\Psi(s_i,r_k) = (1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i) = o(\nu_i/\omega)$, hence
+\[
+  R_k(\omega,s) = c'\,\frac{\omega}{2-\omega} + \frac{\nu^2_\Sigma}{\omega^2} + o(1),
+  \qquad c' = \sigma^2\,d_{\mathrm{eff}}(\rho),
+  \qquad d_{\mathrm{eff}}(\rho) := \sum_{i=1}^D (1-s_i)^2,
+\]
+which is strictly convex with unique minimizer $\omega^* = (4\nu^2_\Sigma/c')^{1/3}$ to leading order (for $\nu_\Sigma=0$ the optimum is the boundary $\omega^*=0$).
+Since $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for every $r_k \in [0,1)$, the frozen-anchor plug-in $c'$ lower-bounds the exact variance at \emph{every} cadence, so the estimator errs toward larger windows---the conservative direction of Proposition~\ref{prop:minimax}; the regime above is sufficient for the clean leading-order form, not for the bound, and at the runtime operating point ($k\omega \lesssim 1$, $s_i \ll 1$) $c'$ stays numerically close to the exact coefficient (Appendix~\ref{app:proofs}).
+The runtime estimator uses the mean-field form $D(1-\bar s)^2$ (exact on isotropic spectra, conservative otherwise); it recovers the drift energy from the two-scale residual excess, $\widehat\nu^2_\Sigma = \max\bigl(0,\,(\widehat E_t - \hat c'\,\omega/(2-\omega))\,\omega^2\bigr)$ with $\widehat E_t = \widehat\sigma^2_{\mathrm{fast}} - \widehat\sigma^2_{\mathrm{slow}}$, and under stationarity $\widehat E_t \to 0$ in expectation, pinning $\omega$ at $\omega_{\min}$ (Appendix~\ref{app:proofs}).
+\end{theorem}
+
+\begin{corollary}[Mixed-drift master law]
+\label{cor:mixed}
+For target increments $\Delta w^*_t = \nu + \vartheta_t$ with coherent velocity $\nu$ and martingale-difference innovation power $q_\Sigma = \E[\vartheta_t^\top \Sigma\, \vartheta_t]$, the exact tracking lag is $\mathcal{L}_{\mathrm{lag}}(\omega) = q_\Sigma/(\omega(2{-}\omega)) + \nu^2_\Sigma/\omega^2$, giving $\omega^* = (4\nu^2_\Sigma/c')^{1/3}$ in the coherent regime ($q_\Sigma = 0$; Theorem~\ref{thm:window}) and the classical $\omega^* = (q_\Sigma/c')^{1/2}$ random-walk law of \citet{widrow1976}; the runtime estimator inverts the total lag, converging to the appropriate regime automatically (Appendix~\ref{app:proofs}).
+\end{corollary}
+
+\begin{proposition}[Anchored risk and the optimal anchor strength]
+\label{prop:conflict}
+Let $v$ be the data-path variance and $\delta^2$ the anchor conflict in a given direction.
+(i) The anchored risk profile is $R(s) = (1-s)^2 v + s^2 \delta^2$; with a correct anchor ($\delta^2 = 0$) it is strictly below $v$ for every $s > 0$, with the largest gain in weakly excited directions.
+(ii) $R(s) = v\delta^2/(v+\delta^2) + (v+\delta^2)\,(s - v/(v+\delta^2))^2$, so the optimal pull is $s^* = v/(v+\delta^2)$ and the corresponding per-direction strength is $\rho^*_i = \sigma^2/(n\,\delta^2_i)$, where $\delta^2_i$ is the expected anchor conflict.
+The optimal anchor strength thus decreases in measured conflict and in $n$.
+\end{proposition}
+
+\begin{proposition}[Minimax safety of conflict overestimation]
+\label{prop:minimax}
+At a fixed conflict budget, the minimax and maximin values coincide (the parallel sum of the variance and the budget).
+Overestimating conflict is safe.
+Under a calibrated overestimate, the excess of the anchored risk over the no-anchor risk is at most $(v+\delta^2)(s-s^*)^2$. Underestimating conflict costs quadratically in the same expression; the twice-the-optimum boundary is the James--Stein domination condition \citep{james1961}.
+\end{proposition}
+
+\begin{proposition}[False-alarm calibration]
+\label{prop:falsealarm}
+Under a calibrated sub-exponential null, the thresholded trigger has false-alarm rate at most its nominal level (a Freedman-type bound \citep{freedman1975}); it calibrates the running two-scale statistic, with measured rates in Section~\ref{sec:bridges} and proof in Appendix~\ref{app:proofs}.
+The variance-floor subtraction and conflict floor induce strictly positive effective thresholds $\tau_\omega = \hat c' \omega_{\min}/(2-\omega_{\min})$ and $\tau_\rho = C_{\mathrm{floor}}$, so the guarantee applies at $\tau = \min(\tau_\omega,\tau_\rho) > 0$: for the windowed test, stationarity pins $\omega_t$ at $\omega_{\min}$ with probability at least $1-\delta$.
+The implemented EMA trigger is the surrogate calibrated at these thresholds (Appendix~\ref{app:protocol}).
+\end{proposition}
+
+\begin{proposition}[No-regret wrappers]
+\label{prop:ocowrap}
+(i) The cumulative loss is convex in the pull profile $s \in [0,1]^D$ (affine in $s$ by Equation~\eqref{eq:pull} in the instantaneous eigenbasis $U_t$ of $\bar A_t$, with the minimum-ridge data solve $\widehat w_t = (\bar A_t + \rho_{\mathrm{ridge}}I)^{-1}\bar b_t$, then squared), so projected gradient descent on the profile attains regret at most $G_B\sqrt{2DT}$ against every fixed profile in the box---including the data path ($s = \mathbf 0$), the anchor path ($s = \mathbf 1$), and, when the accumulator is quasi-stationary, every fixed scalar strength $\rho$---for arbitrary adaptive bounded losses \citep{zinkevich2003}.
+A fixed profile $s$ is basis-relative: when $U_t$ rotates it corresponds to the time-varying physical operator $U_t\operatorname{diag}(s)U_t^\top$, so the comparator is the realized profile sequence rather than a fixed linear operator in feature space (Appendix~\ref{app:proof-composition}).
+The $s = \mathbf 1$ comparator is the learner-dragged anchor $G_t$ (external regret on the interpolation segment); the frozen $G_0$ enters only in (ii), where the counterfactual guarantee against it lives.
+(ii) Exponentially weighted mixture prediction over $K$ expert paths (batch-solved leaky windows plus the frozen anchor) satisfies $\sum_t \ell_t(\mathrm{mix}) \le (\min_i L_{i,T} + \ln K/\eta)/(1 - \eta M)$ for arbitrary bounded adaptive losses; the comparator class contains every benchmarked window and the anchor, a best-of-both-worlds statement (Appendix~\ref{app:proofs}).
+\end{proposition}
+
+\begin{proposition}[Information-form conditioning bound]
+\label{prop:windup}
+At any window and for any data, $\kappa(A + n\rho I) \le 1 + \mu_{\max}/\rho$, independent of the drift.
+The anchored solve never iterates an inverse, so it needs no implementation care at short windows; Section~\ref{sec:experiments} measures what happens when the standard covariance recursion does.
+\end{proposition}
+\begin{proof}
+The eigenvalues of $A + n\rho I$ lie in $[\,n\rho,\ n(\mu_{\max} + \rho)\,]$, whose ratio is $1 + \mu_{\max}/\rho$.
+\end{proof}
+
+\begin{theorem}[Spectral retention and the streaming risk]
+\label{thm:rmt}
+Let the feature vectors have independent sub-Gaussian entries with population spectral measure $H$ supported on $[\tau_{\min},\tau_{\max}]$, $\tau_{\min}>0$ (full-rank population covariance), and let $\zeta = D \omega$ be held fixed as $D \to\infty$ (proportional regime).
+(i) The average data retention $q = 1 - \bar s$ is the unique solution in $(0,1)$ of
+\[
+\begin{aligned}
+q \;&=\; \int \frac{\tau}{\tau + \rho_{\mathrm{eff}}}\, dH(\tau), \\
+\rho_{\mathrm{eff}} \;&=\; \rho\,\frac{e^{\zeta q} - 1}{\zeta q},
+\end{aligned}
+\]
+and the anchored one-step excess prediction risk converges to $\sigma^2\, \Upsilon/(1 - \Upsilon)$ with
+$\Upsilon = \frac{1}{q}\int \bigl(\frac{\tau}{\tau + \rho_{\mathrm{eff}}}\bigr)^{2} dH(\tau)\,\bigl(1 - \frac{1 - e^{-\zeta q}}{\zeta q}\bigr)$.
+(ii) The pull sensitivities are closed form: $\rho\, \partial \bar s / \partial \rho = \mathcal{I}\,/\,(1 + \zeta\,\phi(\zeta q)\,\mathcal{I})$, with $\mathcal{I} = \int \tilde s (1 - \tilde s)\, dH(\tau)$, $\tilde s(\tau) = \rho_{\mathrm{eff}}/(\tau + \rho_{\mathrm{eff}})$, and $\phi(u) = \tfrac{1}{1 - e^{-u}} - \tfrac{1}{u}$.
+(iii) Under an anchor conflict $\delta = G - w^*$ with direction-weighted conflict measure $H_\delta$ (atom $\delta_i^2$ at direction $\tau_i$), the full excess prediction risk converges to
+\[
+R_{\mathrm{pred}} \;\longrightarrow\; \frac{1}{1 - \Upsilon}\left[\sigma^2 \Upsilon + \rho_{\mathrm{eff}}^2 \int \frac{\tau}{(\tau + \rho_{\mathrm{eff}})^2}\, dH_\delta(\tau)\right].
+\]
+The oracle anchor recovers Part~(i), and the classical limit $\zeta \to 0$ recovers Proposition~\ref{prop:conflict}'s per-direction conflict bias $\mu_i(\rho/(\mu_i+\rho))^2\delta_i^2$. Part~(i) is therefore the variance component of the risk, while Part~(iii) is the full risk.
+\end{theorem}
+The convergence step is the separable-covariance deterministic equivalent \citep{silverstein1995,rubio2011,hachem2007}; the nearest prior analysis, the large-system exponentially windowed RLS of \citet{xiao2005}, has no anchor, pulls, refresh, or online calibration, and the ridge-risk line \citep{hastie2022} treats unweighted batches.
+The finite-window spreading is a single renormalization $\rho \mapsto \rho_{\mathrm{eff}} \ge \rho$: the formula matches simulation within $5\%$ on the $30$ full-rank fixed points of the $45$-point grid and the measured pairs within $13\%$.
+It is a correction to the analysis, not a term fed back into the runtime rule: Algorithm~\ref{alg:spar-pull} keeps the mean-field plug-in $\hat c'_t$, and Theorem~\ref{thm:rmt} quantifies what that forgoes as $\zeta$ grows.
+The full-rank hypothesis is essential: on rank-deficient spectra ($H(\{0\})>0$) the deterministic equivalent misses the null-space boundary layer and overestimates the out-of-sample conflict increment by up to $67\%$ at $\rho = 0.01$ (Appendix~\ref{app:protocol}).
+Part~(ii) supplies the analytic coupling product used in Theorem~\ref{thm:closedloop}: in logarithmic coordinates the product is at most $\tfrac{4}{3(2-\omega)}\,\bar s < 1$ for all $\omega \in (0, 2/3)$ (Appendix~\ref{app:protocol}).
+
+The per-direction variant inherits the Davis--Kahan eigenvector fragility \citep{davis1970,wedin1972}: it degrades on flat and rotating spectra (Section~\ref{sec:limitations}), while the scalar method is invariant to basis rotation (Proposition~\ref{prop:invariance}, Appendix~\ref{app:proofs}).
+Variable forgetting factor RLS \citep{fortescue1981,paleologu2008} adapts its factor from the squared prequential residual; in covariance form it suffers the same short-window instability (Section~\ref{sec:experiments}).
+
+\begin{theorem}[Closed-loop stability of the two estimators]
+\label{thm:closedloop}
+Let the window and strength errors satisfy the coupled recursions of Appendix~\ref{app:proofs} (estimator gains $\eta_\nu, \eta_C$; target sensitivities $L_{\omega\rho}, L_{\rho\omega}$; perturbations bounded by $\xi$).
+The recursions model the quasi-static two-time-scale regime: the smoothing horizons $1/\eta_C, 1/\eta_\nu$ are slow relative to the fast EMA horizon $h_f$, and, in the drift-active interior where the window is open ($1/\omega \lesssim k/\eta_\nu$), to the accumulator mixing time $1/\omega$; finite-$k$ lag then enters as an additive perturbation absorbed into $\xi_\omega,\xi_\rho$, so the contraction and tracking radius are uniform in its bound. Outside that interior the detector floor pins $\omega_t = \omega_{\min}$ (Theorem~\ref{thm:window}), the pinned specialization of part~(ii).
+(i) If $L_{\omega\rho} L_{\rho\omega} < 1$, the pair contracts geometrically in a weighted max-norm, with explicit weight and rate below one, to within $\xi/(1-\gamma_{\mathrm{cl}})$ of the coupled fixed point.
+(ii) When either quantity is pinned (the drift-active lower bound on $\rho$, or the window floor or cap on $\omega$), the system is triangular and the free quantity's contraction governs alone.
+(iii) The stationary fluctuation obeys $\limsup_m \E[V(m)^2] \le q_*/(1 - \gamma_{\mathrm{cl}})^2$ for the weighted max-norm $V$ and innovation second moment $q_* \ge \E\|\xi(m)\|_r^2$ (Proposition~\ref{prop:fluct}); the cross-quantity covariance itself is not asserted, since the scalar Lyapunov route is what the contraction gives without matrix-order assumptions.
+\end{theorem}
+The proof assembles Theorem~\ref{thm:window}'s exact window contraction with the plug-in rule of Proposition~\ref{prop:conflict}. The coupled contraction is verified in \texttt{Coupled.lean}; the measured coupling product is below one in all 20 diagnostic runs, with one quantity pinned in three of four configurations (Appendix~\ref{app:protocol}).
+
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{The window law}
+\textbf{Protocol.}
+We evaluate 31 configurations at $D = 128$ and $T = 10^4$ over 5 seeds each: a 27-configuration full-factorial grid (three spectra, three drift geometries, three prior qualities) plus four stress tests (loss of persistent excitation, oscillating drift, a stationary control, and a heavy-tailed variant).
+One fixed control parametrization is used for every SPAR configuration (Appendix~\ref{app:hyper}); baselines use the best single hyperparameter in their family.
+Every baseline family runs through a shared verification step that confirms exact reductions to RLS at the degenerate parameter values.
+
+\textbf{Pre-drift floor.}
+Before drift, the calibrated window sits at its lower bound and the error is the noise floor: SPAR-Pull holds $1.01$--$1.14\times\sigma^2$ across the three spectra ($0.0106$ grand mean vs.\ $\sigma^2=0.01$) and varies by $4.1\%$ across oracle, warm, and adversarial priors ($0.301$, $0.305$, $0.313$).
+
+\textbf{Window response.}
+On the abrupt-jump stream the window opens after the jump and the strength falls; Appendix Figure~\ref{fig:cliffdials} traces both.
+A transient sweep (Appendix Table~\ref{tab:transient}) shows that the adaptive strength stays within $1$--$5\%$ of the best fixed strength at cadence $10$, while a large fixed anchor costs $87\%$ overall.
+Appendix Figure~\ref{fig:cliffapp} sweeps the window and locates the sharp degradation at short windows, confirming that the calibrated method stays on the stable side.
+
+\textbf{Finite-$D$ correction.}
+The deterministic-equivalent formula matches the Monte Carlo stationary risk within $5\%$ on the $30$ full-rank operating points of the $45$-point grid (Appendix~\ref{app:rmt-validation}), within $13\%$ at the method's own operating points, and the conflict increment within $0.6$--$11\%$ on full-rank spectra.
+The rank-deficient corner lies outside the theorem's hypotheses; Section~\ref{sec:limitations} states the measured cost.
+
+\subsection{Fixed-protocol comparison}
+Table~\ref{tab:grid} reports the fixed-protocol comparison.
+Two oracle-free families lead the mean: the slow-horizon estimated-noise Kalman ($0.215$) and nominal-length VFF ($0.267$).
+Both are static-target specialists; SPAR-Pull wins all nine covariance-rotation configurations ($0.011$ vs.\ $0.023$ and $0.027$).
+On moving targets the unanchored information-form leaky method wins $12$ of the $18$ configurations.
+The leading baseline's margin rests on hindsight: its process-noise level is tuned post hoc on the evaluation grid, and selecting it causally from the stationary pre-drift segment alone instead degenerates the estimated-noise Kalman to mean MSE $1.69$ against the post-hoc $0.215$ (Appendix~\ref{app:protocol}).
+The calibrated SPAR methods attain $0.297$--$0.306$ mean MSE with $1.22$ worst-case, and no SPAR method diverges, while the unsymmetrized covariance-form recursion diverges at short windows ($135/135$ main-grid and $20/20$ stress-suite runs).
+Per-step symmetrization stabilizes the covariance form on full-rank spectra \citep{bierman1977,sayed2008} but not on rank-deficient spectra, where the dead directions inflate deterministically; the anchored information form avoids the issue entirely (Proposition~\ref{prop:windup}).
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.92}
+\caption{Factorial grid (27 main configurations $\times$ 5 seeds): mean, geometric-mean, and worst overall MSE (worst single run of 135; the geometric mean is scale-invariant across the three spectra).
+Baselines use their family's best single hyperparameter, selected post hoc on the evaluation grid; the causal Kalman instead selects its $q$ from the stationary pre-drift segment alone.
+The true-noise Kalman is an oracle comparator (best single $q$, $0.204/0.86$); the WiSE-FT envelope sweeps $\alpha$ per configuration.
+VFF-RLS covariance reports the nominal-length calibration's best setting ($N_0 = 100$); the single-step calibration $\xi = \sigma_0^2$ diverged in all 135 runs (Appendix~\ref{app:protocol}).
+Standard errors of the mean over the $135$ runs are $0.026$--$0.050$, so aggregate differences below about $0.05$ are not resolved by the mean alone; the paired tests use configuration-level pairing.}
+\label{tab:grid}
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{lccc}
+\toprule
+method & mean MSE & geo.\ mean & worst MSE \\
+\midrule
+\multicolumn{3}{l}{\emph{baselines (single hyperparameter, tuned post hoc on the evaluation grid)}}\\
+leaky RLS ($\lambda = 0.997$) & $0.555$ & $0.233$ & $2.12$ \\
+leaky RLS, information form ($\lambda = 0.99$) & $0.342$ & $0.188$ & $1.19$ \\
+SGD ($\mathrm{lr} = 0.01$) & $0.377$ & $0.147$ & $1.29$ \\
+Adam ($\mathrm{lr} = 0.01$) & $0.503$ & $0.291$ & $1.92$ \\
+directional forgetting & $1.81$ & $0.567$ & $7.54$ \\
+AROW & $2.74$ & $0.448$ & $10.55$ \\
+Kalman, $R$ estimated online (100-step horizon) & $1.09$ & $0.265$ & $5.36$ \\
+Kalman, $R$ estimated online (20{,}000-step horizon) & $0.215$ & $0.090$ & $0.93$ \\
+VFF-RLS, covariance form ($N_0 = 100$) \citep{fortescue1981} & $0.267$ & $0.125$ & $0.98$ \\
+\multicolumn{3}{l}{\emph{causal baseline (no test-grid tuning)}}\\
+Kalman, $R$ estimated online (causal $q$ from warm-up) & $1.69$ & $0.266$ & $9.42$ \\
+\multicolumn{3}{l}{\emph{regret-guaranteed methods (one fixed configuration)}}\\
+OGD, scalar pull (segment) & $0.585$ & $0.226$ & $2.16$ \\
+OGD, $D$-dim profile (Proposition~\ref{prop:ocowrap}(i)) & $0.707$ & $0.324$ & $2.61$ \\
+\midrule
+\multicolumn{3}{l}{\emph{oracle comparator}}\\
+Kalman, best single $q$, true $\sigma^2$ & $\mathbf{0.204}$ & $\mathbf{0.089}$ & $\mathbf{0.86}$ \\
+\midrule
+\multicolumn{3}{l}{\emph{ours (closed-form streaming, one fixed configuration)}}\\
+SPAR-EG (Proposition~\ref{prop:ocowrap}(ii)) & $0.358$ & $0.144$ & $1.27$ \\
+SPAR-EG$^+$ (pool incl.\ SPAR-Pull) & $0.297$ & $0.099$ & $1.22$ \\
+SPAR-Pull & $0.306$ & $0.100$ & $1.22$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The stability separation between the two solve forms has a numerical origin.
+In covariance form, reducing $\lambda$ from $0.997$ (nominal window $333$) to $0.99$ (window $100$) raises the 27-configuration mean MSE from $0.555$ to $182$ and then to $1.2 \times 10^6$ (diverging in all $135$ main-grid and $20$ stress-suite runs).
+Two mechanisms contribute: whatever the rank-one downdate cannot see inflates by $(1{-}\omega)^{-t}$.
+On full-rank spectra the unseen component is roundoff: symmetrizing the iterated inverse restores stability at every window tested ($0.61$ at $\lambda = 0.99$, $D = 128$). On rank-deficient spectra it is the dead directions themselves, which inflate deterministically even under symmetrization (stable on all 90 full-rank runs, divergent on 42 of 45 rank-deficient). The anchored information form never iterates an inverse and is immune to both. Neither directional forgetting nor any SPAR method diverged in any configuration (Appendix Figure~\ref{fig:cliffapp}).
+
+Exponentiated-gradient weights over $K = 5$ expert paths (batch-solved leaky windows plus the frozen anchor), with the anytime rate $\varsigma_t = \sqrt{\ln K / S_t}$, attain $0.358/1.27$ with no tuning, within $17\%$ of the plug-in rule; on oscillating streams the mixture is within $2.4\%$ of the best single window ($6.36$ vs.\ $6.21$).
+Adding the SPAR-Pull trajectory itself as a sixth expert (SPAR-EG$^+$) attains $0.297$ mean MSE ($1.22$ worst-case), $2.9\%$ below the plug-in method, so the Proposition~\ref{prop:ocowrap}(ii) guarantee holds relative to a pool containing the plug-in method. The gain appears in 11 of 27 configurations (paired $t$ $p = 0.032$; Wilcoxon $p = 0.61$).
+
+\subsection{Ablation and cost}
+\label{sec:bridges}
+On four representative configurations, removing the window estimator, the two-scale detector, or the refresh costs $+189$--$190\%$ overall MSE (the first two pin $\omega_t = \omega_{\min}$), and $\gamma = 0.5$ costs $+560\%$; freezing the strength rule \emph{lowers} mean MSE by $2.2\%$.
+Appendix Table~\ref{tab:ablation} localizes prior immunity: freezing the spectral anchor refresh costs $2.2\times$ on warm-prior configurations and $7.4\times$ on adversarial ones (early MSE $47.0$ vs.\ $16.4$), while freezing $\rho$ leaves both within $2.6\%$.
+The strength rule's contribution is therefore the onset guard of Section~\ref{sec:experiments}, not a continuous tracking gain.
+SPAR-Pull solves step (viii) exactly each step ($O(D^3)$); SPAR-Pull-D caches the refresh eigenbasis and runs at $O(D^2)$ per step with $O(D^3)$ every $k$ refreshes ($52.6$ vs.\ $241$ ms at $D = 2048$; Appendix Table~\ref{tab:app-ops}).
+
+An abrupt-jump strength sweep locates the value of the rule (Appendix Table~\ref{tab:transient}): a large fixed anchor, the choice a good warm prior invites, multiplies pre-drift MSE by $4.2$ relative to a small fixed anchor and costs $87\%$ overall at cadence 10, while the adaptive rule stays within $1$--$5\%$ of the best fixed strength.
+The 50-step post-jump window is dominated by the jump itself and is flat across the adaptive and small-anchor policies, so $\rho_t$ acts as a guard against an oversized anchor, not as a post-jump accelerator.
+
+The false-escalation rate of Proposition~\ref{prop:falsealarm} is at or below nominal except at $\delta = 0.01$ on ill-conditioned spectra, as the sub-exponential tail predicts.
+The OGD regret slopes ($-0.65$ isotropic, $-1.08$ ill-conditioned) lie within the $O(T^{-1/2})$ rate, with pre-drift dominance and prior immunity in Appendix Figures~\ref{fig:regret} and~\ref{fig:prior} (Appendix~\ref{app:protocol}).
+
+\subsection{Robustness outside the model class}
+Three generators outside the linear-Gaussian, constant-rate class: nonlinear targets ($y = \tanh(x^\top w^*) + \varepsilon$), covariate shift (feature scale doubles mid-stream), and a noise-regime change ($\sigma^2$ rising from $0.01$ to $0.05$, no target drift).
+The SPAR-EG mixtures lead on nonlinear targets and are best-or-tied under the noise-regime change; under covariate shift the Kalman family leads ($0.268$ true-noise, $0.284$ estimated-$R$), with SPAR-EG$^+$ and SPAR-Pull ahead of the anchored and leaky methods.
+No SPAR method diverged under any mismatch, while the $\lambda = 0.995$ leaky method degraded sharply on nonlinear targets (numbers in Appendix~\ref{app:protocol}).
+
+\subsection{A real high-dimensional stream}
+\label{sec:realstream}
+We ran the grid-default configuration unchanged on a public hourly electricity-load panel \citep{trindade2015electricity,lai2018lstd}: $D = 324$ features (321 client loads plus hour-of-day terms), a $2{,}000$-hour warm-up and a $6{,}000$-hour evaluation horizon, with three held-out clients (the 25th, 50th, and 75th percentiles by mean load) as targets.
+Across the three clients SPAR-EG$^+$ stays within $1.2\%$ of the best oracle-tuned leaky window (and matches it on the three-client mean, $0.0136$) and SPAR-Pull within $4$--$17\%$, with no stream-specific parameter, while the slow estimated-$R$ Kalman trails over the full horizon (three-client means $0.051$ and $0.257$ at $q = 10^{-5}$ and $10^{-4}$).
+The stream is close to the smooth long-window regime, where the analysis predicts that a fixed long window is nearly optimal (Appendix~\ref{app:realstream}).
+
+\subsection{BCI IV cross-session evaluation}
+\label{sec:eeg}
+Nine subjects each from BCI IV 2a \citep{brunner2008bci2a,tangermann2012bci} and 2b \citep{leeb2008bci2b}, streamed from the training session against Riemannian baselines, backprop references, and our heads (Appendix~\ref{app:eeg}).
+The head uses a reduced window range for the short evaluation streams; every other constant is the grid default.
+On 2b, the transductive SPAR-EG head reaches $0.816$ and SPAR-Pull $0.808$; the strictly causal SPAR-Pull head attains $0.801$, against $0.811$ for the causal WiSE-FT reference taken at the best of an $11$-value post-hoc $\alpha$-envelope (Appendix~\ref{app:eeg}).
+On 2a, offline alignment leads the fixed readouts ($0.664$), with the post-hoc ensemble at $0.668$; the best streaming method is $0.627$. Both datasets have $T \approx 300$ trials, below the plug-in crossover horizon $T_{\mathrm{crit}} \asymp K^2/(s_0 - s^*)^2$ at which calibration overtakes fixed shrinkage (Appendix~\ref{app:proof-sign}), consistent with the fixed-anchor head leading on 2a and the mixture leading on 2b.
+
+\section{Scope and Boundary Conditions}
+\label{sec:limitations}
+Table~\ref{tab:scope} collects the conditions under which the claims hold; the appendix gives the corresponding protocols and numbers.
+The central laws (Theorems~\ref{thm:cadence} and~\ref{thm:window}) are mean-field statements, and Theorem~\ref{thm:rmt} is the finite-$D$ correction on full-rank spectra.
+The empirical claims are about the calibrated method on the streams studied, not about universal dominance.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{0.95}
+\caption{Scope of the claims. Each row names a condition, the protocol that tests it, and the consequence outside the condition.}
+\label{tab:scope}
+\begin{tabular}{p{1.15in}p{2.1in}p{2.55in}}
+\toprule
+dimension & assumption or protocol & consequence outside it \\
+\midrule
+design model & Theorems~\ref{thm:cadence}--\ref{thm:window} use the mean-field accumulator; Theorem~\ref{thm:rmt} retains the random design & the mean-field target is a control law at $\zeta \le 6.4$ (drift phase); the finite-$D$ correction is the relevant statement there \\
+spectrum & Theorem~\ref{thm:rmt} assumes full rank, $\tau_{\min}>0$ & rank-deficient conflict error reaches $67\%$ at $\rho=0.01$; reported as a boundary, not covered \\
+contraction & Theorem~\ref{thm:closedloop} is local at an interior fixed point with the clip inactive & the global statement keeps the measured-product hypothesis and the gate \\
+moving targets & fixed-protocol grid, 27 configurations & unanchored information-form leaky RLS wins $12/18$ moving-target configurations; SPAR wins all $9$ static-target covariance-rotation configurations \\
+strength rule & onset guard; average effect measured by ablation & freezing it lowers mean MSE by $2.2\%$; its value is the transient guard, not a continuous tracking gain \\
+detector timescale & two-scale residual EMA, $h_f = 30$, $h_{\mathrm{slow}} = 20{,}000 \approx 2T$ & a drift persisting beyond $h_{\mathrm{slow}}$ relaxes both averages to a common level and the detector stops opening the window \\
+baseline protocol & best single hyperparameter per family & SGD at $\mathrm{lr}=0.05$ diverges on all $45$ isotropic runs; the causal-$q$ Kalman selects $q=10^{-6}$ on the stationary pre-drift segment and is degenerate (Appendix~\ref{app:protocol}) \\
+BCI IV & 9 subjects per dataset; reduced window range for the short streams; causal and transductive alignment reported separately & $0.816$ uses session-level transductive alignment; $0.801$ is the causal score, against $0.811$ for causal WiSE-FT \\
+electricity & three held-out clients (25th/50th/75th percentile by mean load) & a percentile sweep, not a random-client population; the script accepts any client indices \\
+Lean artifact & algebraic core, refresh chain, regret bounds, coupled contraction & probabilistic concentration, the moving-frame reduction, RMT convergence, and Davis--Kahan are pen-and-paper (Appendix~\ref{app:lean}) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Conclusion}
+The finite-cadence refresh equilibrium is the central object: it gives the tracking lag and variance reduction of an anchored stream in closed form, and the optimal forgetting window follows by minimizing the cycle-averaged risk.
+The random-matrix correction extends the law to finite dimension, where the anchor is renormalized by the finite window; the correction is accurate on full-rank spectra and has a documented boundary on rank-deficient ones.
+The Lean artifact formalizes the algebraic core, the refresh chain, the regret bounds, and the coupled contraction.
+
+Two questions remain open.
+The closed-form stationary law for the coupled estimators is not known; the moment recursion is the current analytic handle.
+The rank-deficient boundary needs a separate deterministic equivalent that resolves the null-space layer.
+Neither question affects the calibrated method on the full-rank streams studied here.
+
+\bibliographystyle{tmlr}
+\bibliography{references}
+
+\clearpage
+\appendix
+\setcounter{theorem}{0}
+\setcounter{lemma}{0}
+\setcounter{proposition}{0}
+\setcounter{corollary}{0}
+\renewcommand{\thetheorem}{\thesection.\arabic{theorem}}
+\renewcommand{\thelemma}{\thesection.\arabic{lemma}}
+\renewcommand{\theproposition}{\thesection.\arabic{proposition}}
+\renewcommand{\thecorollary}{\thesection.\arabic{corollary}}
+\input{appendix}
+
+\end{document}

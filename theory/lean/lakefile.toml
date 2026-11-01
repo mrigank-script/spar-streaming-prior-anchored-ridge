@@ -1,0 +1,9 @@
+name = "SparTheorems"
+defaultTargets = ["SparTheorems"]
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+[[lean_lib]]
+name = "SparTheorems"
