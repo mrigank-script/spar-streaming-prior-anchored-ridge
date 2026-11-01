@@ -7,6 +7,7 @@ paper-cited diagnostic.
   py scripts/diagnostics.py --diag coupling   # closed-loop coupling
   py scripts/diagnostics.py --diag rmt        # spectral risk (adjudication,
                                               #   operating points, sensitivities)
+  py scripts/diagnostics.py --diag subopt      # finite-cadence window surrogate gap
   py scripts/diagnostics.py --diag all
 
 Replaces the six per-diagnostic scripts (vff_diag.py, windup_mech.py,
@@ -649,18 +650,48 @@ def diag_alt_trust() -> None:
     print("saved results/alt_trust.csv")
 
 
+# ============================================== finite-cadence suboptimality
+def diag_subopt() -> None:
+    """Relative gap between the surrogate cubic window target and the exact
+    cycle-averaged optimum over the runtime cadence range."""
+    k, sigma2, D = 10, 0.01, 128
+    rows = []
+    for k_omega in (0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5):
+        w0 = k_omega / k
+        for s in (0.02, 0.05, 0.1, 0.2, 0.3):
+            c = sigma2 * D * (1 - s) ** 2
+            nu = float(np.sqrt((c * w0 ** 3 / 4) / D))
+            w = np.linspace(w0 * 0.05, min(0.9, w0 * 20), 200000)
+            r = (1 - w) ** k
+            a = s * (2 - s)
+            psi = 1 - 2 * s * (1 + s - s * s) * (1 - r) / ((1 + a) * (1 - a * r))
+            dk = s * nu * k * (a / (1 - a) + 0.5)
+            risk = sigma2 * D * (w / (2 - w)) * psi + D * (nu / w + dk) ** 2
+            gap = risk[np.argmin(np.abs(w - w0))] / risk.min() - 1
+            rows.append({"k_omega": k_omega, "omega": w0, "s": s,
+                         "rel_gap": float(gap)})
+    df = pd.DataFrame(rows)
+    df.to_csv(RES / "window_subopt.csv", index=False)
+    print(df.pivot_table(index="k_omega", columns="s",
+                         values="rel_gap").round(5).to_string())
+    print("\nmax relative gap by s:")
+    print(df.groupby("s").rel_gap.max().round(5).to_string())
+    print("saved results/window_subopt.csv")
+
+
 # ================================================================= dispatch
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--diag", default="all",
                         choices=["vff", "windup", "sgd", "coupling",
-                                 "rmt", "alt_trust", "all"])
+                                 "rmt", "alt_trust", "subopt", "all"])
     args = parser.parse_args()
-    which = (["vff", "windup", "sgd", "coupling", "rmt", "alt_trust"]
+    which = (["vff", "windup", "sgd", "coupling", "rmt", "alt_trust",
+              "subopt"]
              if args.diag == "all" else [args.diag])
     fns = {"vff": diag_vff, "windup": diag_windup, "sgd": diag_sgd,
            "coupling": diag_coupling, "rmt": diag_rmt,
-           "alt_trust": diag_alt_trust}
+           "alt_trust": diag_alt_trust, "subopt": diag_subopt}
     for name in which:
         print(f"\n=== diagnostics: {name} ===", flush=True)
         fns[name]()
