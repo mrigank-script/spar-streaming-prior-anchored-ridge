@@ -1,0 +1,51 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+
+# LaTeX
+*.aux
+*.log
+!theory/lean/axioms.log
+*.synctex.gz
+*.bbl
+*.blg
+*.out
+*.toc
+
+# NOTE: paper/build/ is where we keep the compiled PDF; don't ignore it
+!paper/build/
+
+# Data (downloaded or regenerated locally; not part of the repository)
+data/
+
+# Environment
+.env
+.venv/
+venv/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Lean build artifacts (managed by lake)
+.lake/
+
+# Temporary files
+*.tmp
+~$*
+
+# Backups and temporary result files
+*.backup.csv
+results/factorial_mismatch_legacy.csv
+results/redteam/
+paper/build/*.png

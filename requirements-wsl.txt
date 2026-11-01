@@ -1,0 +1,5 @@
+# WSL GPU venv extras for the BP arms (scripts/bench_bp_tta.py, scripts/bench_bp_core.py).
+# For CUDA acceleration install the CUDA build of jax for your toolkit, e.g.
+#   pip install -U "jax[cuda12]"     (see https://jax.readthedocs.io/en/latest/installation.html)
+# The CPU jax/jaxlib from requirements.txt runs these scripts too.
+optax>=0.2
