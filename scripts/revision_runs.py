@@ -189,12 +189,10 @@ def existing_keys(suite):
         return set()
     df = pd.concat(frames, ignore_index=True)
     if suite == "ablation":
-        need = set(ABL_VARIANTS)
-        out = set()
-        for key, g in df.groupby(["drift", "spectrum", "prior", "seed"]):
-            if need <= set(g["method"]):
-                out.add(tuple(key))
-        return out
+        # keyed by (drift, spectrum, prior, seed, variant) so a re-run skips
+        # every variant that is already present.
+        return set(zip(df["drift"], df["spectrum"], df["prior"],
+                       df["seed"], df["method"]))
     need_main = {"spar_pull", "spar_eg", "spar_eg_plus", *BASE_METHODS}
     need_stress = {"spar_pull", "spar_eg_plus"}
     out = set()
