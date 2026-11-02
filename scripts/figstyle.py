@@ -4,6 +4,9 @@ Single source of truth for rcParams, the Okabe-Ito semantic palette,
 physical size presets, and the dual PDF+PNG exporter.
 """
 
+import os
+
+os.environ.setdefault("SOURCE_DATE_EPOCH", "946684800")  # reproducible PDF timestamps
 import matplotlib
 
 matplotlib.use("Agg")
