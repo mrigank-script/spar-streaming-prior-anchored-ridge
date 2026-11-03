@@ -1,0 +1,71 @@
+Cover Letter - Journal of Machine Learning Research (JMLR) submission
+
+Title: Finite-Cadence Refresh Equilibria for Streaming Prior-Anchored Ridge: A
+Closed-Form Forgetting Window and Spectral Correction
+
+Author (sole): Mrigank Shekhar Singh, DLDAV Model School, Shalimar Bagh, Delhi,
+India.  Corresponding author: Mrigank Shekhar Singh, mrigank.codes@gmail.com
+
+Keywords: streaming regression, prior-anchored ridge, forgetting factor, drift
+adaptation, deterministic equivalent
+
+Dear Editors,
+
+Description and significance.
+The manuscript studies recursive, prior-anchored ridge estimation on drifting
+streams. It derives a finite-cadence refresh equilibrium of the anchored
+recursion: a closed-form tracking lag, an explicit variance-reduction factor,
+and, by minimizing the cycle-averaged risk, a closed-form optimal forgetting
+window together with a plug-in anchor strength. A random-matrix deterministic
+equivalent extends both laws to finite dimension and delimits a rank-deficient
+boundary. The resulting method, SPAR, calibrates its window and strength online
+from streaming residuals and is evaluated on a factorial grid of synthetic
+streams, on an hourly electricity stream, and on BCI IV 2a/2b, with the
+algebraic core, the refresh chain, and the regret bounds formalized in Lean 4.
+The contribution is a closed-form, machine-checked theory of anchored
+forgetting, bridging forgetting-factor heuristics and a principled control law.
+
+Relation to prior work / originality.
+The manuscript is not under consideration at any other journal or conference and
+has not been published in any journal. A preprint of this work is available on
+Zenodo (DOI: 10.5281/zenodo.23856541). The submission is self-contained; there
+is no prior conference version whose delta must be described.
+
+Authorship.
+Single-author submission; the author consents to review by JMLR.
+
+Conflicts of interest.
+The author declares no conflicts of interest and has not collaborated with any
+of the action editors or reviewers suggested or opposed below.
+
+Funding and competing interests.
+None.
+
+Suggested Action Editors (all JMLR Action Editors; non-binding, in order):
+  1. Maxim Raginsky (stochastic approximation, statistical learning,
+     dynamical systems and control)
+  2. Varun Kanade (online learning, learning theory, optimization)
+  3. Wouter Koolen (online learning, regret bounds, sequential calibration)
+  4. Lorenzo Rosasco (statistical learning theory, spectral regularization,
+     ridge/kernel methods)
+  5. Pierre Alquier (statistical learning theory, high-dimensional statistics),
+     or Mladen Kolar (high-dimensional statistics)
+
+Suggested reviewers (all JMLR Editorial Board of Reviewers; non-binding):
+  1. Zhou Fan (random matrices, high-dimensional asymptotics)
+  2. Edgar Dobriban (statistical learning theory, sketching, ridge asymptotics)
+  3. Tengyuan Liang (high-dimensional asymptotics, interpolation)
+  4. Michal Derezinski (randomized linear algebra, matrix sketching)
+  5. Dylan Foster (online learning, control), or Lijun Zhang (online learning,
+     dynamic regret under drift)
+
+The suggested names are offered by topic only; please disregard any for which a
+conflict of interest arises.
+
+Length. The manuscript is 41 pages including appendices. The extended
+experimental protocol, BCI IV details, the hyperparameter table, and the
+reproducibility material are provided as a separate online appendix (17 pages),
+following JMLR's convention for online appendices.
+
+Sincerely,
+Mrigank Shekhar Singh
