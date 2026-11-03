@@ -441,7 +441,8 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
                 rho_init=0.1, ridge=0.01, return_diag=False,
                 rho_drift_floor=None, use_cusum=True, use_ref=True,
                 adaptive_rho=True, debias_variance_floor=False,
-                rho_pin=None, w_pin=None, prediction_units=False):
+                rho_pin=None, w_pin=None, prediction_units=False,
+                sticky_floor=False, drift_margin=0.05):
     """SPAR-Pull: both estimators self-calibrated from measured statistics.
 
     Estimator 1 (anchor strength, conflict theorem):
@@ -586,7 +587,14 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
 
         r_t = y[t] - x[t] @ W
         sigma2_fast = (1 - eta_f) * sigma2_fast + eta_f * (r_t * r_t)
-        sigma2_base = (1 - base_eta) * sigma2_base + base_eta * (r_t * r_t)
+        if sticky_floor:
+            # Scale-free floor: update the slow baseline only while no drift
+            # excess is present; under sustained drift it is frozen at the
+            # pre-drift noise level, so the excess stays open-ended.
+            if sigma2_fast <= sigma2_base * (1.0 + drift_margin):
+                sigma2_base = (1 - base_eta) * sigma2_base + base_eta * (r_t * r_t)
+        else:
+            sigma2_base = (1 - base_eta) * sigma2_base + base_eta * (r_t * r_t)
 
         if refresh and step % refresh_every == 0 and step > 0:
             Abar = A / n_eff
