@@ -80,6 +80,9 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `branch_max_lipschitz`      : the branch `max` is Lipschitz at ties
 * `strength_floor_pos`        : the conflict floor is strictly positive
 * `strength_floor_bound`      : the floor bounds the strength target
+
+### Basis-Invariant Comparators
+* `conj_const_diagonal`      : a constant profile is c*I in every basis
 -/
 
 /-! ## Pull Identity
@@ -826,3 +829,23 @@ theorem strength_floor_bound (mu V a b floor : ℝ) (hV : 0 ≤ mu * V)
     mu * V / max (max a b) floor ≤ mu * V / floor := by
   have hle : floor ≤ max (max a b) floor := le_max_right _ _
   exact div_le_div_of_nonneg_left hV hfloor hle
+
+/-! ## Basis-Invariant No-Regret Comparators
+
+The projected-gradient comparator of Theorem `prop:ocowrap(i)` is a pull
+profile `s ∈ [0,1]^D` read in the instantaneous eigenbasis `U_t`, i.e. the
+realized physical operator `U_t diag(s) U_tᵀ`.  A *constant* profile `s ≡ c`
+is basis-invariant: `U diag(c) Uᵀ = c·I` in every orthonormal basis, so the
+isotropic profiles, in particular the data path `c = 0` and the anchor path
+`c = 1`, are basis-invariant comparators of the no-regret bound; a general
+fixed `s` is a comparator through its realized sequence. -/
+
+/-- **Basis-invariant comparators**: a constant pull profile `s ≡ c` realizes
+the physical operator `Q · diag(c) · Qᵀ = c·I` in every orthonormal basis `Q`. -/
+theorem conj_const_diagonal {n : Type*} [Fintype n] [DecidableEq n]
+    (Q : Matrix n n ℝ) (c : ℝ) (hQ : Q * Qᵀ = 1) :
+    Q * Matrix.diagonal (fun _ : n => c) * Qᵀ = c • (1 : Matrix n n ℝ) := by
+  have hdiag : Matrix.diagonal (fun _ : n => c) = c • (1 : Matrix n n ℝ) := by
+    rw [show (fun _ : n => c) = c • (fun _ => (1 : ℝ)) by ext; simp,
+        Matrix.diagonal_smul, Matrix.diagonal_one]
+  rw [hdiag, Matrix.mul_smul, Matrix.smul_mul, mul_one, hQ]

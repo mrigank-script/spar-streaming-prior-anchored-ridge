@@ -42,6 +42,7 @@ import SparTheorems
 #print axioms branch_max_lipschitz
 #print axioms strength_floor_pos
 #print axioms strength_floor_bound
+#print axioms conj_const_diagonal
 #print axioms joint_tracking
 #print axioms joint_geometric_pinned
 #print axioms window_second_deriv_pos

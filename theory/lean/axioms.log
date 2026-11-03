@@ -31,6 +31,7 @@
 'branch_max_lipschitz' depends on axioms: [propext, Classical.choice, Quot.sound]
 'strength_floor_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
 'strength_floor_bound' depends on axioms: [propext, Classical.choice, Quot.sound]
+'conj_const_diagonal' depends on axioms: [propext, Classical.choice, Quot.sound]
 'naive_dial_no_fixed_point' depends on axioms: [propext, Classical.choice, Quot.sound]
 'debiased_dial_contraction' depends on axioms: [propext, Classical.choice, Quot.sound]
 'window_second_deriv_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
