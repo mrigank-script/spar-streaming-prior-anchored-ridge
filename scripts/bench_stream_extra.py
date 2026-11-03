@@ -70,28 +70,28 @@ def main() -> None:
 
     rrows = []
     t_all = time.perf_counter()
-    for client in clients:
-        x, y = build_h(vals, client, 1)
-        task = arms(x, y)
-        base_names = [k for k in task if not k.startswith("SPAR")]
-        best_base = min(mse(task[k], y) for k in base_names)
-        for name, preds in task.items():
-            m = mse(preds, y)
-            rrows.append(dict(client=client, D=x.shape[1], horizon=1,
-                              method=name, mse=m))
-        sp_pull = mse(task["SPAR-Pull"], y)
-        print(f"client {client}: SPAR-Pull={sp_pull:.5f} "
-              f"best_base={best_base:.5f}", flush=True)
-    pd.DataFrame(rrows).to_csv(ROOT / "results" / "stream_random_clients.csv",
-                               index=False)
-
-    df = pd.DataFrame(rrows)
-    piv = df.pivot_table(index="client", columns="method", values="mse")
-    base_cols = [c for c in piv.columns if not c.startswith("SPAR")]
-    wins = int((piv["SPAR-Pull"] <= piv[base_cols].min(axis=1)).sum())
-    print("\nrandom-client means:")
-    print(piv.mean().round(5).to_string())
-    print(f"SPAR-Pull <= best baseline on {wins}/{len(piv)} clients")
+    if "--horizon" not in sys.argv:
+        for client in clients:
+            x, y = build_h(vals, client, 1)
+            task = arms(x, y)
+            base_names = [k for k in task if not k.startswith("SPAR")]
+            best_base = min(mse(task[k], y) for k in base_names)
+            for name, preds in task.items():
+                m = mse(preds, y)
+                rrows.append(dict(client=client, D=x.shape[1], horizon=1,
+                                  method=name, mse=m))
+            sp_pull = mse(task["SPAR-Pull"], y)
+            print(f"client {client}: SPAR-Pull={sp_pull:.5f} "
+                  f"best_base={best_base:.5f}", flush=True)
+        pd.DataFrame(rrows).to_csv(
+            ROOT / "results" / "stream_random_clients.csv", index=False)
+        df = pd.DataFrame(rrows)
+        piv = df.pivot_table(index="client", columns="method", values="mse")
+        base_cols = [c for c in piv.columns if not c.startswith("SPAR")]
+        wins = int((piv["SPAR-Pull"] <= piv[base_cols].min(axis=1)).sum())
+        print("\nrandom-client means:")
+        print(piv.mean().round(5).to_string())
+        print(f"SPAR-Pull <= best baseline on {wins}/{len(piv)} clients")
 
     if "--horizon" in sys.argv:
         hrows = []
@@ -111,7 +111,8 @@ def main() -> None:
         hp = pd.DataFrame(hrows).pivot_table(index="horizon", columns="method",
                                              values="mse")
         print(hp.round(5).to_string())
-    print("\nsaved results/stream_random_clients.csv")
+    print("\nsaved results/stream_horizon.csv" if "--horizon" in sys.argv
+          else "\nsaved results/stream_random_clients.csv")
 
 
 if __name__ == "__main__":
