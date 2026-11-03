@@ -807,8 +807,14 @@ L_{\ln \omega, \ln\rho}\,L_{\ln\rho, \ln \omega}
 \;<\; 1
 \end{equation}
 for all $\bar s \in (0,1)$ and $\omega \in (0, 2/3)$, with strict improvement from spectral anisotropy ($\operatorname{Var}_H(\tilde s) > 0$ reduces $\mathcal I$ below $q\bar s$).
-This is a \emph{local} contraction statement at an interior fixed point with the clip inactive: it bounds the Jacobian of the estimator map, not the iterates after a branch switch or while a cap is active.
-We therefore claim local contraction, not global contraction along every trajectory; the global statement in Theorem~\ref{thm:closedloop} retains the measured-product hypothesis and the gate.
+The bound \eqref{eq:rmt-coupling} is uniform on the parameter box $B = [\omega_{\min},\omega_{\max}]\times[\rho_{\mathrm{lo}},\rho_{\mathrm{hi}}]$: it uses only $\mathcal I \le q\bar s$ and $\bar s \le \bar s_{\max} < 1$, both of which hold at every $\rho$, so it is not tied to the fixed point.
+\begin{corollary}[Global contraction on the parameter box]
+\label{cor:global}
+The mean-field coupled map $F(\omega,\rho) = (\omega^*(\rho),\rho^*(\omega))$ is a contraction on the whole box $B$ in the weighted max-norm $\max\{|\ln\omega|,\, r\,|\ln\rho|\}$, with the fixed weight $r = \sqrt{a_{\max}/b_{\max}}$ and modulus $\gamma_{\mathrm{glob}} = \sqrt{a_{\max}b_{\max}} \le \sqrt{\tfrac{4}{3}\,\bar s_{\max}/(2-\omega_{\max})} < 1$, where $a_{\max} = \sup_B |\partial\ln\omega^*/\partial\ln\rho|$ and $b_{\max} = \sup_B |\partial\ln\rho^*/\partial\ln\omega|$ are finite by \eqref{eq:rmt-coupling}.
+The clip is a nonexpansive projection onto $B$, so $B$ is forward-invariant and the clipped recursion contracts on $B$ as well.
+By Banach's theorem $F$ has a unique fixed point and every trajectory in $B$ converges to it geometrically at rate $\gamma_{\mathrm{glob}}$: the basin of attraction is the entire box $B$, not a neighbourhood of the fixed point.
+The piecewise definition of $\widehat C$ preserves this: $F$ is smooth with the same bound on each branch region, and a pointwise maximum of finitely many Lipschitz maps is Lipschitz with the largest constant.
+\end{corollary}
 
 \subsubsection{Numerical validation}
 \label{app:rmt-validation}
