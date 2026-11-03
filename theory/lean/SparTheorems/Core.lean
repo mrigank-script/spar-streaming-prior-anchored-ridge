@@ -42,6 +42,10 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `refresh_fixed_point`         : g* = −L − νk·a/(1−a)
 * `refresh_closed_form`         : geometric closed form with rate a^m
 * `refresh_contraction_rate`    : a ∈ (0,1) for s ∈ (0,1)
+* `sum_range_half`              : Σ_{j<k}(j + 1/2) = k2/2
+* `moving_frame_reduction`      : g_{m+1} = a·g_m − (1−s)2·L − a·ν·k
+* `cycle_midpoint_average`      : cycle average g_m − ν·k/2
+* `cycle_lag_assembly`          : Δ_k = s·ν·k·(a/(1−a) + 1/2)
 
 ### Dial Fixed-Point Dichotomy
 * `naive_dial_no_fixed_point`   : naive dial cubed value at least doubles per step
@@ -535,3 +539,74 @@ theorem deff_sub_plugin_nonneg {ι : Type*} (T : Finset ι) (s : ι → ℝ) (hc
       - (T.card : ℝ) * (1 - (∑ i ∈ T, s i) / (T.card : ℝ)) ^ 2 := by
   rw [deff_sub_plugin T s hcard]
   exact Finset.sum_nonneg (fun i _ => sq_nonneg _)
+
+/-! ## Moving-Frame Reduction and Cycle Assembly
+
+The refresh chain of the finite-cadence equilibrium follows from a change
+of frame.  Writing `g_m = G_m − w*(t_m)` for the anchor offset in the
+moving frame, the within-cycle anchored solution is
+`W_t − w*(t) = (1−s)(−L) + s(g_m − ν(t−t_m))`.  Substituting it into the
+refresh `G_{m+1} = (1−s)W_{t_{m+1}} + s G_m` at `t_{m+1} = t_m + k` and
+using the constant target velocity `w*(t_{m+1}) − w*(t_m) = ν k` gives the
+affine recursion `g_{m+1} = a g_m − (1−s)2 L − a ν k` with `a = s(2−s)`.
+Averaging the within-cycle advance over the cycle is the midpoint
+assembly, exact for the linear advance, and its steady-state value is the
+cycle-averaged lag `Δ_k(s) = s ν k (a/(1−a) + 1/2)`. -/
+
+/-- **Gauss sum for the within-cycle midpoint**: the sum of the within-cycle
+midpoint offsets is `Σ_{j<k}(j + 1/2) = k2/2`. -/
+theorem sum_range_half (k : ℕ) :
+    (∑ j ∈ Finset.range k, ((j : ℝ) + 1 / 2)) = (k : ℝ) ^ 2 / 2 := by
+  induction k with
+  | zero => simp
+  | succ n ih =>
+      rw [Finset.sum_range_succ, ih]
+      push_cast
+      ring
+
+/-- **Moving-frame reduction**: the refresh update together with the
+moving-frame within-cycle solution reduce to the affine recursion
+`g_{m+1} = a g_m − (1−s)2·L − a·ν·k` with `a = s(2−s)`, where
+`g_m = G_m − w*(t_m)` is the anchor offset in the moving frame and the
+target advances by `ν·k` over the cycle. -/
+theorem moving_frame_reduction
+    (s L ν k gm Gm W1 wm wm1 Gm1 : ℝ)
+    (hg : gm = Gm - wm)
+    (hW1 : W1 - wm1 = (1 - s) * (-L) + s * (gm - ν * k))
+    (hrefresh : Gm1 = (1 - s) * W1 + s * Gm)
+    (htarget : wm1 - wm = ν * k) :
+    Gm1 - wm1
+      = s * (2 - s) * gm - (1 - s) ^ 2 * L - s * (2 - s) * ν * k := by
+  have hW1' : W1 = wm1 + ((1 - s) * (-L) + s * (gm - ν * k)) := by
+    linarith [hW1]
+  have hG : Gm = gm + wm := by linarith [hg]
+  have hwm1 : wm1 = wm + ν * k := by linarith [htarget]
+  rw [hrefresh, hW1', hG, hwm1]
+  ring
+
+/-- **Midpoint cycle assembly**: the cycle average of the frozen-anchor
+advance `g_m − ν·(t − t_m)` over the `k` within-cycle steps, taken at the
+midpoints (exact for a linear advance), equals `g_m − ν·k/2`. -/
+theorem cycle_midpoint_average (k : ℕ) (hk : k ≠ 0) (gm ν : ℝ) :
+    (1 / (k : ℝ)) * (∑ j ∈ Finset.range k, (gm - ν * ((j : ℝ) + 1 / 2)))
+      = gm - ν * (k : ℝ) / 2 := by
+  have hk' : (k : ℝ) ≠ 0 := by exact_mod_cast hk
+  rw [Finset.sum_sub_distrib]
+  rw [show (∑ j ∈ Finset.range k, ν * ((j : ℝ) + 1 / 2))
+        = ν * ∑ j ∈ Finset.range k, ((j : ℝ) + 1 / 2) by
+      rw [Finset.mul_sum]]
+  rw [sum_range_half, Finset.sum_const, Finset.card_range]
+  simp only [nsmul_eq_mul]
+  field_simp
+
+/-- **Cycle-averaged lag**: substituting the stationary offset
+`g* = −L − νk·a/(1−a)` into the midpoint assembly, the anchored gap
+exceeds the pure-leaky lag `−L` by `Δ_k(s) = s·ν·k·(a/(1−a) + 1/2)`,
+the cycle-averaged lag of the finite-cadence refresh equilibrium. -/
+theorem cycle_lag_assembly (s ν L k : ℝ) (hne : 1 - s * (2 - s) ≠ 0) :
+    - ((1 - s) * (-L)
+        + s * ((-L - ν * k * (s * (2 - s)) / (1 - s * (2 - s)))
+               - ν * k / 2) - (-L))
+      = s * ν * k * ((s * (2 - s)) / (1 - s * (2 - s)) + 1 / 2) := by
+  field_simp
+  ring

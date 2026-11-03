@@ -25,6 +25,10 @@ import SparTheorems
 #print axioms refresh_variance_lb
 #print axioms deff_sub_plugin
 #print axioms deff_sub_plugin_nonneg
+#print axioms moving_frame_reduction
+#print axioms cycle_midpoint_average
+#print axioms cycle_lag_assembly
+#print axioms sum_range_half
 #print axioms joint_tracking
 #print axioms joint_geometric_pinned
 #print axioms window_second_deriv_pos
