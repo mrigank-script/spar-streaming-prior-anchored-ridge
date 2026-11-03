@@ -71,7 +71,7 @@ Since $1 - s = \mu/(\mu + \rho)$,
 and subtracting $w = (1-s)w + s w$ gives the identity.
 No approximation is involved.
 Applying it coordinatewise in the eigenbasis to \eqref{eq:app-anchored} yields the form stated in Section~\ref{sec:theory}.
-Both the $\gamma = 1$ and general-$\gamma$ forms are formalized (\texttt{pull\_identity}, \texttt{pull\_identity\_general} in \texttt{Core.lean}).
+Both the $\gamma = 1$ and general-$\gamma$ forms are formalized (\texttt{pull\_identity}, \texttt{pull\_identity\_general}), together with the eigenbasis decoupling of the anchored solve (\texttt{eigenbasis\_solve\_coord}, \texttt{eigenbasis\_pull\_identity}) in \texttt{Core.lean}.
 \end{proof}
 
 \subsection{Proof of Lemma~\ref{lem:zerolag} (zero-lag refresh equilibrium)}
@@ -1125,7 +1125,7 @@ Table~\ref{tab:lean-map} summarizes the correspondence between the paper's resul
 \scriptsize
 \setlength{\tabcolsep}{3pt}
 \caption{Map from the paper's results to the Lean artifact.
-The $\gamma = 1$ specialization of Equation~\eqref{eq:pull} to the eigenbasis, the differentiation step of Theorem~\ref{thm:window}'s convexity, and the probabilistic statements are pen-and-paper; every algebraic identity with a named Lean declaration above is formalized; the remaining rows are pen-and-paper and appear in the list below.}
+The differentiation step of Theorem~\ref{thm:window}'s convexity and the probabilistic statements are pen-and-paper; every algebraic identity with a named Lean declaration above is formalized; the remaining rows are pen-and-paper and appear in the list below.}
 \label{tab:lean-map}
 \resizebox{\textwidth}{!}{%
 \begin{tabular}{l p{1.2in} p{1.9in} l}
@@ -1133,6 +1133,7 @@ The $\gamma = 1$ specialization of Equation~\eqref{eq:pull} to the eigenbasis, t
 paper result & content & Lean declaration(s) & file \\
 \midrule
 Equation~\eqref{eq:pull} & pull identity ($\gamma = 1$ and general) & \texttt{pull\_identity}, \texttt{pull\_identity\_general} & Core.lean \\
+Equation~\eqref{eq:pull} (eigenbasis) & diagonal decoupling; coordinatewise anchored solve & \texttt{eigenbasis\_solve\_coord}, \texttt{eigenbasis\_pull\_identity} & Core.lean \\
 Proposition~\ref{prop:conflict} & risk interpolation; dominance; calibration identity; optimal pull; multiplicative inversion at the optimum & \texttt{convex\_interp\_sq}, \texttt{convex\_interp\_sq\_le}, \texttt{dominance}, \texttt{dominance\_strict}, \texttt{quadratic\_calibration}, \texttt{quadratic\_calibration\_delta}, \texttt{optimal\_pull\_min}, \texttt{optimal\_pull\_attained}, \texttt{pull\_inverse} & Core.lean \\
 Proposition~\ref{prop:minimax} & minimax value (core inequality); safety excess identity; multiplicative safety threshold $s(v+c)\le 2v$ & \texttt{minimax\_lower}, \texttt{quadratic\_calibration}, \texttt{safety\_threshold} & Core.lean \\
 Lemma~\ref{lem:zerolag} & lag-invariance algebra & \texttt{lag\_invariance} & Core.lean \\
@@ -1161,8 +1162,8 @@ Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{co
 \end{table}
 
 \subsection{Coverage and formalization boundary}
-The artifact contains 77 theorem and lemma declarations, all proved: 34 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
+The artifact contains 79 theorem and lemma declarations, all proved: 36 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
 The probabilistic concentration step, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
