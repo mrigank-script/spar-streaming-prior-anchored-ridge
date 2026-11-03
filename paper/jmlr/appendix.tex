@@ -487,7 +487,7 @@ Online projected gradient descent on convex losses against an adaptive adversary
   \;\le\; G_b\sqrt{2DT}
 \]
 with the stated step size \citep{zinkevich2003}; no probabilistic assumption is used.
-The comparison class contains the pure-data profile $\mathbf 0$, the pure-anchor profile $\mathbf 1$, and every fixed scalar-$\rho$ profile $s_\rho$, since all lie in the box.
+The comparison class contains the pure-data profile $\mathbf 0$, the pure-anchor profile $\mathbf 1$, and every fixed scalar-$\rho$ profile $s_\rho$, since all lie in the box; in physical coordinates it is the realized operator sequence $\{U_t\operatorname{diag}(s)U_t^\top\}$, whose basis-invariant sub-class is the isotropic family $\{cI\}$ (constant $s \equiv c$; \texttt{conj\_const\_diagonal}), containing $\mathbf 0$, $\mathbf 1$, and every fixed isotropic ridge. The sublinear rate is confirmed by the diagnostic OGD runs (\texttt{results/regret\_scaling.csv}) and the $\sqrt D$ premium by the dimension sweep (\texttt{results/regret\_dscaling.csv}).
 The bound is external regret against the realized loss sequence: the anchor's state makes a comparator's counterfactual anchor trajectory differ from the realized one, and policy regret is not claimed.
 \end{proof}
 
@@ -1057,7 +1057,7 @@ Proposition~\ref{prop:invariance} & rotation equivariance; refresh commutation &
 Proposition~\ref{prop:falsealarm} & concentration step & --- (pen-and-paper, \citep{freedman1975}) & --- \\
  & subgradient identity & \texttt{sq\_subgradient} & Ogd.lean \\
  & box-projection contraction (1-dim) & \texttt{projBox\_dist\_sq\_le} & Ogd.lean \\
-Proposition~\ref{prop:ocowrap}(i) & Zinkevich step (adaptive losses) & \texttt{ogd\_regret\_box}, \texttt{ogd\_regret\_segment} & Ogd.lean \\
+Proposition~\ref{prop:ocowrap}(i) & Zinkevich step (adaptive losses); basis-invariant comparators & \texttt{ogd\_regret\_box}, \texttt{ogd\_regret\_segment}, \texttt{conj\_const\_diagonal} & Ogd.lean, Core.lean \\
  & $D$-dimensional contraction & \texttt{projBoxD\_dist\_sq\_le}, \texttt{sum\_expand\_sq}, \texttt{ogd\_step\_D}, \texttt{ogd\_regret\_box\_D} & BoxD.lean \\
 Proposition~\ref{prop:ocowrap}(ii) & quadratic exponential bound & \texttt{exp\_neg\_le\_one\_sub\_add\_sq} & Hedge.lean \\
  & potential step, ratio, and product bounds & \texttt{Zfun\_step}, \texttt{Zfun\_step\_bound}, \texttt{Zfun\_prod\_bound} & Hedge.lean \\
@@ -1074,8 +1074,8 @@ Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{co
 \end{table}
 
 \subsection{Coverage and Formalization Boundary}
-The artifact contains 86 theorem and lemma declarations, all proved: 43 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, the smooth effective-dimension Lipschitz bound, the weighted cross-covariance bound, the degeneracy-floor and branch-continuity lemmas, the deterministic-equivalent collapse, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
+The artifact contains 87 theorem and lemma declarations, all proved: 44 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the basis-invariant comparator lemma, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, the smooth effective-dimension Lipschitz bound, the weighted cross-covariance bound, the degeneracy-floor and branch-continuity lemmas, the deterministic-equivalent collapse, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
 The probabilistic concentration step, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
