@@ -103,7 +103,7 @@ with $a \in (0,1)$ for every $s \in (0,1)$, so the recursion contracts at rate $
   \qquad
   g_m \;=\; g^* + a^m\,(g_0 - g^*).
 \]
-The rate identity, the fixed-point equation, the closed form, and the contraction are formalized (\texttt{refresh\_rate\_identity}, \texttt{refresh\_fixed\_point},\newline\texttt{refresh\_closed\_form}, \texttt{refresh\_contraction\_rate} in \texttt{Core.lean}); we also verified the fixed point and the cycle-averaged lag against a one-dimensional simulation at two operating points.
+The rate identity, the fixed-point equation, the closed form, and the contraction are formalized (\texttt{refresh\_rate\_identity}, \texttt{refresh\_fixed\_point},\newline\texttt{refresh\_closed\_form}, \texttt{refresh\_contraction\_rate}, together with the moving-frame reduction and the midpoint cycle assembly, in \texttt{Core.lean}); we also verified the fixed point and the cycle-averaged lag against a one-dimensional simulation at two operating points.
 The geometric steady-lag form parallels the iterate-averaging analyses under drift \citep{polyak1992,cutler2023} and the per-direction momentum lag analysis of \citet{hong2026}.
 The cycle-averaged solution lags the pure-leaky path by
 \[
@@ -998,6 +998,7 @@ Proposition~\ref{prop:conflict} & risk interpolation; dominance; calibration ide
 Proposition~\ref{prop:minimax} & minimax value (core inequality); safety excess identity; multiplicative safety threshold $s(v+c)\le 2v$ & \texttt{minimax\_lower}, \texttt{quadratic\_calibration}, \texttt{safety\_threshold} & Core.lean \\
 Lemma~\ref{lem:zerolag} & lag-invariance algebra & \texttt{lag\_invariance} & Core.lean \\
 Theorem~\ref{thm:cadence} & refresh rate identity; finite-cadence fixed point; geometric closed form; contraction; correlated variance identities and the lower endpoint $\Psi\ge(1-s)^2$ & \texttt{refresh\_rate\_identity}, \texttt{refresh\_fixed\_point}, \texttt{refresh\_closed\_form}, \texttt{refresh\_contraction\_rate}, \texttt{refresh\_anchor\_variance}, \texttt{refresh\_variance\_form}, \texttt{refresh\_variance\_lt}, \texttt{refresh\_variance\_lb} & Core.lean \\
+Theorem~\ref{thm:cadence} (moving frame) & moving-frame reduction to the affine recursion; midpoint cycle assembly; Gauss sum & \texttt{moving\_frame\_reduction}, \texttt{cycle\_midpoint\_average}, \texttt{cycle\_lag\_assembly}, \texttt{sum\_range\_half} & Core.lean \\
 Theorem~\ref{thm:window} & leading-order window optimum via exact factorization; second-derivative positivity; estimator fixed-point dichotomy & \texttt{window\_optimum}, \texttt{window\_second\_deriv\_pos}, \texttt{naive\_dial\_no\_fixed\_point}, \texttt{debiased\_dial\_contraction} & Ogd.lean, Core.lean \\
 Theorem~\ref{thm:window} (variance coefficient) & exact effective dimension; plug-in gap $D(1-\bar s)^2 \le d_{\mathrm{eff}}$ & \texttt{deff\_sub\_plugin}, \texttt{deff\_sub\_plugin\_nonneg} & Core.lean \\
 Proposition~\ref{prop:invariance} & rotation equivariance; refresh commutation & --- (elementary linear algebra, pen-and-paper) & --- \\
@@ -1021,10 +1022,10 @@ Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{co
 \end{table}
 
 \subsection{Coverage and Formalization Boundary}
-The artifact contains 69 theorem and lemma declarations, all proved: 26 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
+The artifact contains 73 theorem and lemma declarations, all proved: 30 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
-The probabilistic concentration step, the moving-frame reduction from the refresh update to the affine recursion, the finite-cadence risk assembly, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
+The probabilistic concentration step, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
 
 No declaration introduces a custom axiom: the sources contain no \texttt{axiom}, \texttt{sorry}, or \texttt{unsafe} construct, and the headline theorems' axiom dependencies are logged in \texttt{theory/lean/axioms.log}, regenerated by \texttt{theory/lean/print\_axioms.sh}, all resting only on \texttt{propext}, \texttt{Classical.choice}, and \texttt{Quot.sound}.
