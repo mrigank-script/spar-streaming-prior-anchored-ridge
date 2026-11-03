@@ -39,6 +39,9 @@ import SparTheorems
 #print axioms de_collapse
 #print axioms smooth_dim_lipschitz
 #print axioms weighted_cross_le
+#print axioms branch_max_lipschitz
+#print axioms strength_floor_pos
+#print axioms strength_floor_bound
 #print axioms joint_tracking
 #print axioms joint_geometric_pinned
 #print axioms window_second_deriv_pos

@@ -34,6 +34,9 @@ import SparTheorems.Coupled
 #print axioms de_collapse
 #print axioms smooth_dim_lipschitz
 #print axioms weighted_cross_le
+#print axioms branch_max_lipschitz
+#print axioms strength_floor_pos
+#print axioms strength_floor_bound
 #print axioms naive_dial_no_fixed_point
 #print axioms debiased_dial_contraction
 #print axioms window_second_deriv_pos

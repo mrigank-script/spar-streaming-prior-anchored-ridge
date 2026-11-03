@@ -75,6 +75,11 @@ elementary real analysis over ℝ; no probability is mechanized.
 
 ### Weighted Cross-Covariance Bound
 * `weighted_cross_le`         : r|e_w e_r| ≤ V² for V = max(|e_w|, r|e_r|)
+
+### Degenerate Active Dimension and Branch Selection
+* `branch_max_lipschitz`      : the branch `max` is Lipschitz at ties
+* `strength_floor_pos`        : the conflict floor is strictly positive
+* `strength_floor_bound`      : the floor bounds the strength target
 -/
 
 /-! ## Pull Identity
@@ -784,3 +789,40 @@ theorem weighted_cross_le (a b r V : ℝ) (hr : 0 < r) (ha : |a| ≤ V)
   calc r * (|a| * |b|) = |a| * (r * |b|) := by ring
     _ ≤ V * V :=
       mul_le_mul ha hb (mul_nonneg hr.le (abs_nonneg b)) hV
+
+/-! ## Degenerate Active Dimension and Branch Selection
+
+Two degenerate concerns of the strength estimator are resolved by
+construction.  The conflict floor `Ĉ = max(C_ref, C_resid, C_floor)` keeps
+`Ĉ ≥ C_floor > 0`, removing the `Ĉ → 0` singularity of `ρ* = μ̄ V̂/Ĉ`; and the
+`max` selection of the active branch is Lipschitz even where the active branch
+switches, so the derivative jump at a tie cannot break the contraction, which
+uses only Lipschitzness.  The active dimension is floored at one in the
+runtime, and `μ̄ = tr(Ā)/d_act > 0` whenever `Ā ≠ 0`, so `V̂ > 0`; the
+no-excitation limit `Ā = 0` gives `μ̄ = 0` and `ρ* = 0`, the unanchored
+(pure-leaky) degenerate case. -/
+
+/-- **Branch selection is Lipschitz**: the `max` of the conflict branches is
+Lipschitz even where the active branch switches. -/
+theorem branch_max_lipschitz (a a' b b' c c' : ℝ) :
+    |max (max a b) c - max (max a' b') c'|
+      ≤ max (max |a - a'| |b - b'|) |c - c'| := by
+  calc |max (max a b) c - max (max a' b') c'|
+      ≤ max |max a b - max a' b'| |c - c'| :=
+        abs_max_sub_max_le_max _ _ _ _
+    _ ≤ max (max |a - a'| |b - b'|) |c - c'| :=
+        max_le_max (abs_max_sub_max_le_max _ _ _ _) (le_refl _)
+
+/-- **Floor removes the strength singularity**: the conflict floor keeps the
+selected estimate strictly positive. -/
+theorem strength_floor_pos (a b floor : ℝ) (h : 0 < floor) :
+    0 < max (max a b) floor :=
+  lt_of_lt_of_le h (le_max_right _ _)
+
+/-- **Floor keeps the strength target bounded**: with a strictly positive
+floor, `μ V / max(max a b) floor ≤ μ V / floor` whenever `μ V ≥ 0`. -/
+theorem strength_floor_bound (mu V a b floor : ℝ) (hV : 0 ≤ mu * V)
+    (hfloor : 0 < floor) :
+    mu * V / max (max a b) floor ≤ mu * V / floor := by
+  have hle : floor ≤ max (max a b) floor := le_max_right _ _
+  exact div_le_div_of_nonneg_left hV hfloor hle
