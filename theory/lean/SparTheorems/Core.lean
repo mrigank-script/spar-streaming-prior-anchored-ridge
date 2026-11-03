@@ -65,6 +65,10 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `conj_det`                   : orthogonal conjugation preserves the determinant
 * `windup_ratio_le`            : conditioning ratio ≤ 1 + μmax/ρ
 * `pull_weight_bounds`         : μ/(μ+ρ) ∈ [0,1), ρ/(μ+ρ) ∈ (0,1]
+
+### Deterministic-Equivalent Fixed-Point Algebra
+* `de_log_identity`           : e^(zeta q) = 1 + zeta theta at q = log(1+zeta theta)/zeta
+* `de_collapse`               : rho/rho_eff = kappa = log(1+zeta theta)/(zeta theta)
 -/
 
 /-! ## Pull Identity
@@ -687,3 +691,44 @@ theorem eigenbasis_pull_identity {n : Type*} (μ b g wstar : n → ℝ) (ρ : �
         + (ρ / (μ i + ρ)) * (g i - wstar i) := by
   have h := pull_identity (μ i) ρ (b i) (g i) (wstar i) (hμ i) (hμρ i)
   simpa using h
+
+/-! ## Deterministic-Equivalent Fixed-Point Algebra
+
+The separable-covariance deterministic equivalent collapses to a scalar fixed
+point.  With weight sum `κ = log(1+ζθ)/(ζθ)` and `q = κθ`, the retention
+identity `κθ + s̄ = 1` fixes `q`, and the anchored strength renormalizes as
+`ρ/ρ_eff = κ`, equivalently `ρ_eff = ρ(e^{ζq}-1)/(ζq)`. -/
+
+/-- **DE log identity**: with the substitution `q = log(1+ζθ)/ζ`, the argument
+of the renormalization returns the weight sum, `e^{ζ q} = 1 + ζθ`. -/
+theorem de_log_identity (ζ θ : ℝ) (h1 : 0 < 1 + ζ * θ) (hζ : ζ ≠ 0) :
+    Real.exp (ζ * (Real.log (1 + ζ * θ) / ζ)) = 1 + ζ * θ := by
+  have hcancel : ζ * (Real.log (1 + ζ * θ) / ζ) = Real.log (1 + ζ * θ) := by
+    field_simp
+  rw [hcancel, Real.exp_log h1]
+
+/-- **DE collapse / renormalization**: with `κ = log(1+ζθ)/(ζθ)` and `q = κθ`,
+the anchored strength renormalizes as `ρ/ρ_eff = κ`, equivalently
+`ρ_eff = ρ (e^{ζ q} - 1)/(ζ q)`. -/
+theorem de_collapse (ρ ζ θ : ℝ) (h1 : 0 < 1 + ζ * θ) (hζθ : ζ * θ ≠ 0) :
+    ρ / (Real.log (1 + ζ * θ) / (ζ * θ))
+      = ρ * (Real.exp (ζ * ((Real.log (1 + ζ * θ) / (ζ * θ)) * θ)) - 1)
+          / (ζ * ((Real.log (1 + ζ * θ) / (ζ * θ)) * θ)) := by
+  have hζ : ζ ≠ 0 := fun h => hζθ (by rw [h, zero_mul])
+  have hθ : θ ≠ 0 := fun h => hζθ (by rw [h, mul_zero])
+  have hlog : Real.log (1 + ζ * θ) ≠ 0 := by
+    intro h
+    have h1' : (1 : ℝ) + ζ * θ = 1 := by
+      have := Real.exp_log h1
+      rw [h, Real.exp_zero] at this
+      exact this.symm
+    exact hζθ (by linarith)
+  have hkey : ζ * ((Real.log (1 + ζ * θ) / (ζ * θ)) * θ)
+      = Real.log (1 + ζ * θ) := by
+    field_simp [hθ, hζ]
+  have hexp : Real.exp (ζ * ((Real.log (1 + ζ * θ) / (ζ * θ)) * θ))
+      = 1 + ζ * θ := by
+    rw [hkey, Real.exp_log h1]
+  rw [hexp, hkey]
+  field_simp
+  ring

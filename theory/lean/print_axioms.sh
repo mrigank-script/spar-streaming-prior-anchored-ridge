@@ -35,6 +35,8 @@ import SparTheorems
 #print axioms pull_weight_bounds
 #print axioms eigenbasis_solve_coord
 #print axioms eigenbasis_pull_identity
+#print axioms de_log_identity
+#print axioms de_collapse
 #print axioms joint_tracking
 #print axioms joint_geometric_pinned
 #print axioms window_second_deriv_pos

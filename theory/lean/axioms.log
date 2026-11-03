@@ -24,6 +24,8 @@
 'pull_weight_bounds' depends on axioms: [propext, Classical.choice, Quot.sound]
 'eigenbasis_solve_coord' depends on axioms: [propext, Classical.choice, Quot.sound]
 'eigenbasis_pull_identity' depends on axioms: [propext, Classical.choice, Quot.sound]
+'de_log_identity' depends on axioms: [propext, Classical.choice, Quot.sound]
+'de_collapse' depends on axioms: [propext, Classical.choice, Quot.sound]
 'naive_dial_no_fixed_point' depends on axioms: [propext, Classical.choice, Quot.sound]
 'debiased_dial_contraction' depends on axioms: [propext, Classical.choice, Quot.sound]
 'window_second_deriv_pos' depends on axioms: [propext, Classical.choice, Quot.sound]
