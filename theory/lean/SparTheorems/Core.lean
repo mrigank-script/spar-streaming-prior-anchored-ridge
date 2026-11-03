@@ -69,6 +69,9 @@ elementary real analysis over ℝ; no probability is mechanized.
 ### Deterministic-Equivalent Fixed-Point Algebra
 * `de_log_identity`           : e^(zeta q) = 1 + zeta theta at q = log(1+zeta theta)/zeta
 * `de_collapse`               : rho/rho_eff = kappa = log(1+zeta theta)/(zeta theta)
+
+### Smooth Effective Dimension
+* `smooth_dim_lipschitz`      : μ/(μ+ρ) is 1/ρ-Lipschitz on μ ≥ 0
 -/
 
 /-! ## Pull Identity
@@ -732,3 +735,28 @@ theorem de_collapse (ρ ζ θ : ℝ) (h1 : 0 < 1 + ζ * θ) (hζθ : ζ * θ ≠
   rw [hexp, hkey]
   field_simp
   ring
+
+/-! ## Smooth Effective Dimension
+
+The effective dimension in the strength estimator is the resolvent trace
+`Σ_i μ_i/(μ_i + ρ_ridge)`, whose summands lie in `[0,1)` and are
+`1/ρ_ridge`-Lipschitz in the excitation.  It is smooth in the eigenvalues
+with no spectral-gap assumption, unlike an integer active-dimension count. -/
+
+/-- **Smooth effective-dimension Lipschitz**: each resolvent term `μ/(μ+ρ)`
+is `1/ρ`-Lipschitz on the excitation half-line `μ ≥ 0`.  The range bound
+`μ/(μ+ρ) ∈ [0,1)` is `pull_weight_bounds`. -/
+theorem smooth_dim_lipschitz (μ μ' ρ : ℝ) (hμ : 0 ≤ μ) (hμ' : 0 ≤ μ')
+    (hρ : 0 < ρ) :
+    |μ / (μ + ρ) - μ' / (μ' + ρ)| ≤ |μ - μ'| / ρ := by
+  have h1 : μ + ρ ≠ 0 := by positivity
+  have h2 : μ' + ρ ≠ 0 := by positivity
+  have hρ2 : 0 < (μ + ρ) * (μ' + ρ) := by positivity
+  have hkey : μ / (μ + ρ) - μ' / (μ' + ρ)
+      = ρ * (μ - μ') / ((μ + ρ) * (μ' + ρ)) := by
+    field_simp
+    ring
+  rw [hkey, abs_div, abs_mul, abs_of_pos hρ, abs_of_pos hρ2]
+  field_simp
+  nlinarith [abs_nonneg (μ - μ'), mul_nonneg hμ hμ', mul_nonneg hμ hρ.le,
+    mul_nonneg hμ' hρ.le]
