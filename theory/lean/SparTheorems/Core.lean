@@ -57,6 +57,12 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `refresh_variance_lt`         : strict variance reduction at every cadence
 * `deff_sub_plugin`             : d_eff − D(1−s̄)2 = Σ(s_i−s̄)2 (exact variance decomposition)
 * `deff_sub_plugin_nonneg`      : the mean-field plug-in D(1−s̄)2 ≤ d_eff (Jensen lower bound)
+
+### Spectral Invariance and Conditioning
+* `conj_trace`                 : orthogonal conjugation preserves the trace
+* `conj_det`                   : orthogonal conjugation preserves the determinant
+* `windup_ratio_le`            : conditioning ratio ≤ 1 + μmax/ρ
+* `pull_weight_bounds`         : μ/(μ+ρ) ∈ [0,1), ρ/(μ+ρ) ∈ (0,1]
 -/
 
 /-! ## Pull Identity
@@ -610,3 +616,44 @@ theorem cycle_lag_assembly (s ν L k : ℝ) (hne : 1 - s * (2 - s) ≠ 0) :
       = s * ν * k * ((s * (2 - s)) / (1 - s * (2 - s)) + 1 / 2) := by
   field_simp
   ring
+
+open Matrix
+
+/-! ## Spectral Invariance and Conditioning
+
+The scalar method uses only the sufficient statistics `A, B, G`; rotating the
+stream by an orthogonal `Q` conjugates the accumulator, and its scalar
+statistics are invariant to that conjugation.  The pull weights stay in the
+unit interval for every excitation, and the anchored conditioning ratio is
+bounded by `1 + μmax/ρ`, independent of the drift. -/
+
+/-- **Trace invariance**: orthogonal conjugation preserves the trace. -/
+theorem conj_trace {n : Type*} [Fintype n] [DecidableEq n]
+    (Q A : Matrix n n ℝ) (hQ : Q * Qᵀ = 1) :
+    (Qᵀ * A * Q).trace = A.trace := by
+  rw [Matrix.trace_mul_cycle, hQ, one_mul]
+
+/-- **Determinant invariance**: orthogonal conjugation preserves the determinant. -/
+theorem conj_det {n : Type*} [Fintype n] [DecidableEq n]
+    (Q A : Matrix n n ℝ) (hQ : Q * Qᵀ = 1) :
+    (Qᵀ * A * Q).det = A.det := by
+  rw [Matrix.det_mul, Matrix.det_mul, Matrix.det_transpose]
+  have h : Q.det * Q.det = 1 := by
+    have := congrArg Matrix.det hQ
+    rwa [Matrix.det_mul, Matrix.det_transpose, Matrix.det_one] at this
+  linear_combination A.det * h
+
+/-- **Conditioning bound**: the eigenvalue-interval ratio is at most `1 + μmax/ρ`. -/
+theorem windup_ratio_le (μ μmax ρ : ℝ) (hρ : 0 < ρ) (h : μ ≤ μmax) :
+    (μ + ρ) / ρ ≤ 1 + μmax / ρ := by
+  have hsub : (μ + ρ) / ρ = 1 + μ / ρ := by field_simp; ring
+  rw [hsub]
+  exact add_le_add (le_refl (1 : ℝ)) ((div_le_div_iff_of_pos_right hρ).mpr h)
+
+/-- **Pull weights in the unit interval**: `μ/(μ+ρ) ∈ [0,1)` and `ρ/(μ+ρ) ∈ (0,1]`. -/
+theorem pull_weight_bounds (μ ρ : ℝ) (hμ : 0 ≤ μ) (hρ : 0 < ρ) :
+    0 ≤ μ / (μ + ρ) ∧ μ / (μ + ρ) < 1 ∧ 0 < ρ / (μ + ρ) ∧ ρ / (μ + ρ) ≤ 1 := by
+  have hd : 0 < μ + ρ := by linarith
+  refine ⟨by positivity, ?_, by positivity, ?_⟩
+  · rw [div_lt_one hd]; linarith
+  · rw [div_le_one hd]; linarith

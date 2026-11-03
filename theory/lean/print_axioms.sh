@@ -29,6 +29,10 @@ import SparTheorems
 #print axioms cycle_midpoint_average
 #print axioms cycle_lag_assembly
 #print axioms sum_range_half
+#print axioms conj_trace
+#print axioms conj_det
+#print axioms windup_ratio_le
+#print axioms pull_weight_bounds
 #print axioms joint_tracking
 #print axioms joint_geometric_pinned
 #print axioms window_second_deriv_pos

@@ -24,6 +24,10 @@ import SparTheorems.Coupled
 #print axioms cycle_midpoint_average
 #print axioms cycle_lag_assembly
 #print axioms sum_range_half
+#print axioms conj_trace
+#print axioms conj_det
+#print axioms windup_ratio_le
+#print axioms pull_weight_bounds
 #print axioms naive_dial_no_fixed_point
 #print axioms debiased_dial_contraction
 #print axioms window_second_deriv_pos
