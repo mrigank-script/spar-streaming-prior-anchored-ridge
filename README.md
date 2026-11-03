@@ -53,7 +53,10 @@ command is identical with `python3` in its place.
 ## 2. Get the data
 
 The synthetic results need no data; the real-data sections each need the block
-below, fetched once.
+below, fetched once. The release artifact ships the derived EEG npz cache
+(`data/eeg_cache/`), so the EEG results rerun without any download; the hourly
+electricity panel and the other TSLib files are public downloads placed in
+`data/ts/` with the names below.
 
 ### Synthetic drift suite (no download)
 
@@ -125,14 +128,29 @@ py scripts/revision_runs.py --suite ablation
 py scripts/summarize_revision.py
 ```
 
-The real electricity stream (three held-out clients), the transient sweep, and
-all numerical diagnostics:
+The real electricity stream (three held-out clients), the random-client
+population, the multi-step horizon, the transient sweep, and all numerical
+diagnostics:
 
 ```bash
 py scripts/bench_stream_real.py --clients 11,82,171   # -> results/stream_electricity.csv
+py scripts/bench_stream_extra.py                      # random clients -> results/stream_random_clients.csv
+py scripts/bench_stream_extra.py --horizon            # h=1,12 -> results/stream_horizon.csv
 py scripts/transient_test.py                          # -> results/transient_test.csv
-py scripts/diagnostics.py --diag all                  # vff|windup|sgd|coupling|rmt|alt_trust
+py scripts/diagnostics.py --diag all                  # vff|windup|sgd|coupling|rmt|rankdef|subopt|exactrisk
 ```
+
+The revision checks added for the theory and robustness sections:
+
+```bash
+py scripts/moving_targets.py          # -> results/moving_targets.csv
+py scripts/finite_d_conc.py           # -> results/finite_d_conc.csv
+py scripts/sustained_drift.py         # -> results/sustained_drift.csv
+py scripts/stationary_fixed_point.py  # coupled fixed-point contraction (prints a check)
+```
+
+Every command is resumable or deterministic, and each writes the committed CSV
+in `results/` that the manuscript cites.
 
 ## 4. Build the manuscript
 
