@@ -310,13 +310,21 @@ RMT_T_WARM = 2000
 
 
 def rmt_spectrum(kind):
+    """Population spectral measure for the deterministic-equivalent comparison.
+
+    Must match the stream generator ``make_stream_fac`` exactly: the
+    rank-deficient variant zeroes the lower half of the *full* log grid, so
+    its active directions are ``logspace(0, -2, D)[: D//2]`` and its null
+    directions carry ``tau = 0``.
+    """
     if kind == "iso":
         return np.ones(RMT_D)
     if kind == "decay3":
         return np.logspace(0, -3, RMT_D)
     if kind == "rankdef":
-        return np.concatenate([np.logspace(0, -2, RMT_D // 2),
-                               np.zeros(RMT_D // 2)])
+        lam = np.logspace(0, -2, RMT_D)
+        lam[RMT_D // 2:] = 0.0
+        return lam
     raise ValueError(kind)
 
 
@@ -349,6 +357,36 @@ def rmt_formulas(lam, w, rho):
     v_b = RMT_SIGMA2 * Ups / (1 - Ups)
     v_c = (RMT_SIGMA2 * c / (1 - c) if c < 1 else float("inf"))
     return q, rho_eff, v_a, v_b, v_c
+
+
+def rmt_active_subspace(lam, w, rho):
+    """Deterministic equivalent restricted to ``range(Sigma)``.
+
+    Drops the null directions (``tau = 0``) and uses the reduced aspect
+    ratio ``zeta+ = (D+/D) zeta``.  By the active-subspace invariance this
+    equals the full-spectrum deterministic equivalent whenever the null
+    directions carry zero risk weight, which they do: the out-of-sample
+    prediction risk weights every coordinate by ``Sigma`` and ``Sigma``
+    annihilates ``ker(Sigma)``.  Returns ``(D+, Upsilon, risk)``.
+    """
+    lam_a = lam[lam > 0]
+    Dp = lam_a.size
+    c = Dp * w
+    lo, hi = 1e-12, 1.0
+    for _ in range(300):
+        q = 0.5 * (lo + hi)
+        x = c * q
+        grow = np.expm1(x) / x if x > 1e-12 else 1.0
+        if np.mean(lam_a / (lam_a + rho * grow)) - q > 0:
+            lo = q
+        else:
+            hi = q
+    q = 0.5 * (lo + hi)
+    x = c * q
+    rho_eff = rho * (np.expm1(x) / x if x > 1e-12 else 1.0)
+    Jt = float(np.mean((lam_a / (lam_a + rho_eff)) ** 2))
+    Ups = (Jt / q) * (1 - (1 - np.exp(-x)) / x) if x > 1e-12 else 0.0
+    return Dp, Ups, RMT_SIGMA2 * Ups / (1 - Ups)
 
 
 def rmt_mc_fixed(kind, w, rho, n_streams=40):
@@ -459,6 +497,48 @@ def rmt_conflict_point(kind, w, rho, dcoef, n_streams=40):
         tot_d.append(float((Wd - w_star) @ Sig @ (Wd - w_star)))
         tot_o.append(float((Wo - w_star) @ Sig @ (Wo - w_star)))
     return float(np.mean(tot_d)), float(np.mean(tot_o))
+
+
+def diag_rmt_rankdef() -> None:
+    """Active-subspace invariance on rank-deficient spectra.
+
+    Adding exact null directions to the population leaves the out-of-sample
+    prediction risk unchanged, so the deterministic equivalent restricts to
+    ``range(Sigma)`` with ``zeta+ = (D+/D) zeta``.  The reduced form and the
+    full form must therefore agree, and both must match the Monte Carlo
+    stream, whose rank-deficient spectrum is the full log grid with its
+    lower half zeroed.
+    """
+    lam = rmt_spectrum("rankdef")
+    Dp = int(np.sum(lam > 0))
+    print("=== rank-deficient active-subspace deterministic equivalent ===")
+    print(f"    D = {RMT_D}, D+ = {Dp}, zeta+ = {Dp / RMT_D:.2f} zeta")
+    print(f"{'n_eff':>6} {'rho':>7} | {'Ups_full':>9} {'Ups_act':>9} "
+          f"{'|diff|':>9} | {'MC':>10} {'DE act':>10} {'rel':>7}")
+    rows = []
+    for n_eff in (2000, 1000, 500, 200, 100):
+        w = 1.0 / n_eff
+        for rho in (1e-3, 1e-2, 1e-1):
+            q, rho_eff, _v_a, v_b, _v_c = rmt_formulas(lam, w, rho)
+            x = RMT_D * w * q
+            Jt = float(np.mean((lam / (lam + rho_eff)) ** 2))
+            ups_full = (Jt / q) * (1 - (1 - np.exp(-x)) / x) \
+                if x > 1e-12 else 0.0
+            _, ups_act, v_act = rmt_active_subspace(lam, w, rho)
+            mc = rmt_mc_fixed("rankdef", w, rho)
+            rel = abs(mc - v_act) / mc
+            rows.append(dict(spectrum="rankdef", n_eff=n_eff, rho=rho,
+                             Dp=Dp, ups_full=ups_full, ups_active=ups_act,
+                             mc=mc, de_full=v_b, de_active=v_act, rel_err=rel))
+            print(f"{n_eff:>6} {rho:>7} | {ups_full:>9.5f} {ups_act:>9.5f} "
+                  f"{abs(ups_full - ups_act):>9.2e} | {mc:>10.5f} "
+                  f"{v_act:>10.5f} {100 * rel:>6.1f}%")
+    df = pd.DataFrame(rows)
+    df.to_csv(RES / "rmt_rankdef.csv", index=False)
+    print(f"active-subspace: median rel err {df.rel_err.median():.1%}  "
+          f"max {df.rel_err.max():.1%}")
+    print("saved results/rmt_rankdef.csv")
+    print()
 
 
 def diag_rmt_conflict() -> None:
@@ -573,6 +653,7 @@ def diag_rmt() -> None:
                   f"rel {abs(num-closed)/abs(num)*100:.3f}%")
     print()
     diag_rmt_conflict()
+    diag_rmt_rankdef()
 
 
 # ================================================== alternating-trust regime
@@ -684,13 +765,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--diag", default="all",
                         choices=["vff", "windup", "sgd", "coupling",
-                                 "rmt", "alt_trust", "subopt", "all"])
+                                 "rmt", "rankdef", "alt_trust", "subopt", "all"])
     args = parser.parse_args()
     which = (["vff", "windup", "sgd", "coupling", "rmt", "alt_trust",
               "subopt"]
              if args.diag == "all" else [args.diag])
     fns = {"vff": diag_vff, "windup": diag_windup, "sgd": diag_sgd,
            "coupling": diag_coupling, "rmt": diag_rmt,
+           "rankdef": diag_rmt_rankdef,
            "alt_trust": diag_alt_trust, "subopt": diag_subopt}
     for name in which:
         print(f"\n=== diagnostics: {name} ===", flush=True)
