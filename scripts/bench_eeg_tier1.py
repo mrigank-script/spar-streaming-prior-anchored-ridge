@@ -352,6 +352,51 @@ def main() -> None:
             print(f"  online-EA arm failed on subject {subject}: {exc}")
             scores["olea-hybrid-spar_kf"] = (float("nan"), float("nan"))
 
+        # Tighter causal-alignment window: a shorter trailing window tracks the
+        # non-stationarity faster at the cost of a noisier whitener.  Swept so
+        # the causal-vs-transductive gap can be closed by the window alone.
+        for win in (15, 25, 60):
+            try:
+                oe_tr, oe_st = online_ea_features(X_tr, X_st, feature_fn,
+                                                  window=win)
+                Gc_oe_st = online_ea_tangent_stream(X_tr, X_st, ref2,
+                                                    window=win)
+                OH_tr = np.concatenate(
+                    [oe_tr, (Gc_tr - Gc_tr.mean(0)) / (Gc_tr.std(0) + 1e-12)],
+                    axis=1)
+                OH_st = np.concatenate(
+                    [oe_st, (Gc_oe_st - Gc_tr.mean(0)) / (Gc_tr.std(0) + 1e-12)],
+                    axis=1)
+                add(f"olea-w{win}-hybrid-spar_kf", stream_spar_kf_eeg(
+                    OH_tr, y_tr, OH_st, y_st, K)[0])
+            except Exception as exc:  # noqa: BLE001
+                print(f"  online-EA w{win} arm failed on subject {subject}: {exc}")
+                scores[f"olea-w{win}-hybrid-spar_kf"] = (float("nan"), float("nan"))
+
+        # Causal Hedge mixture: the same expert pool as hybrid-spar_eg(+), but
+        # on the causally aligned features, so the mixture is causal end-to-end.
+        try:
+            oe_tr, oe_st = online_ea_features(X_tr, X_st, feature_fn)
+            Gc_oe_st = online_ea_tangent_stream(X_tr, X_st, ref2)
+            OH_tr = np.concatenate(
+                [oe_tr, (Gc_tr - Gc_tr.mean(0)) / (Gc_tr.std(0) + 1e-12)],
+                axis=1)
+            OH_st = np.concatenate(
+                [oe_st, (Gc_oe_st - Gc_tr.mean(0)) / (Gc_tr.std(0) + 1e-12)],
+                axis=1)
+            W_oh = classifier.fit_warm(OH_tr, y_tr, K, ridge=0.01, gamma=0.0)
+            e_oh = [leaky_scores_generic(OH_tr, y_tr, OH_st, y_st, K, alpha=a)
+                    for a in (1.0, 0.995, 0.99, 0.98)]
+            e_oh.append(OH_st @ W_oh)
+            add("olea-hybrid-spar_eg", hedge_scores(e_oh, y_st, K))
+            sp_oh = stream_spar_kf_eeg(OH_tr, y_tr, OH_st, y_st, K)
+            e_oh.append(sp_oh[1])
+            add("olea-hybrid-spar_eg_plus", hedge_scores(e_oh, y_st, K))
+        except Exception as exc:  # noqa: BLE001
+            print(f"  causal Hedge arm failed on subject {subject}: {exc}")
+            scores["olea-hybrid-spar_eg"] = (float("nan"), float("nan"))
+            scores["olea-hybrid-spar_eg_plus"] = (float("nan"), float("nan"))
+
         rows.append(scores)
         print(f"subject {subject}: " + " ".join(
             f"{k}={v[0]:.3f}" for k, v in scores.items()), flush=True)
