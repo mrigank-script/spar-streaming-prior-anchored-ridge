@@ -51,6 +51,8 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `refresh_anchor_variance`     : steady-state anchor variance system
 * `refresh_variance_form`       : closed-form correlated solution variance
 * `refresh_variance_lt`         : strict variance reduction at every cadence
+* `deff_sub_plugin`             : d_eff − D(1−s̄)2 = Σ(s_i−s̄)2 (exact variance decomposition)
+* `deff_sub_plugin_nonneg`      : the mean-field plug-in D(1−s̄)2 ≤ d_eff (Jensen lower bound)
 -/
 
 /-! ## Pull Identity
@@ -468,3 +470,68 @@ theorem refresh_variance_lb (s ρ v : ℝ) (hs0 : 0 < s) (hs1 : s < 1)
     field_simp [ne_of_gt hDpos]
   rw [hrhsdiv]
   exact (le_div_iff₀ hDpos).mpr hmain
+
+/-! ## Exact Effective Dimension and the Mean-Field Plug-In
+
+The variance coefficient of the window law is
+`c' = σ2 · d_eff(ρ)` with `d_eff = Σ_i (1 − s_i)^2`, while the runtime
+rule uses the mean-field plug-in `D(1 − s̄)^2`, where
+`s̄ = (Σ_i s_i)/D` is the mean pull.  The decomposition below shows that
+the plug-in is the exact coefficient minus the population variance of the
+pulls: it is a lower bound (Jensen), the discrepancy is exactly
+`D · Var(s) ≥ 0`, it vanishes on an isotropic spectrum (all pulls equal),
+and it is largest when the pulls are spread out, as on a rank-deficient
+spectrum whose dead directions carry `s_i = 1`.  Consequently the exact
+coefficient is available from the eigenvalues already computed at each
+refresh, and substituting it removes the mean-field error from the
+window iteration. -/
+
+open Finset
+
+/-- **Exact effective-dimension decomposition**: the difference between the
+exact variance coefficient `d_eff = Σ_i (1 − s_i)^2` and the mean-field
+plug-in `D(1 − s̄)^2` equals the population variance of the pulls,
+`Σ_i (s_i − s̄)^2 = D · Var(s)`.  The identity is algebraic and holds for
+every finite spectrum; no full-rank or isotropy assumption is used. -/
+theorem deff_sub_plugin {ι : Type*} (T : Finset ι) (s : ι → ℝ) (hcard : T.card ≠ 0) :
+    (∑ i ∈ T, (1 - s i) ^ 2)
+      - (T.card : ℝ) * (1 - (∑ i ∈ T, s i) / (T.card : ℝ)) ^ 2
+      = ∑ i ∈ T, (s i - (∑ i ∈ T, s i) / (T.card : ℝ)) ^ 2 := by
+  have hn : (T.card : ℝ) ≠ 0 := by exact_mod_cast hcard
+  set m : ℝ := (∑ i ∈ T, s i) / (T.card : ℝ) with hm
+  have hmul : m * (T.card : ℝ) = ∑ i ∈ T, s i := by
+    rw [hm]; field_simp
+  have hL : (∑ i ∈ T, (1 - s i) ^ 2)
+      = (T.card : ℝ) - 2 * (∑ i ∈ T, s i) + ∑ i ∈ T, s i ^ 2 := by
+    have hpt : ∀ i, (1 - s i) ^ 2 = s i ^ 2 - 2 * s i + 1 := by intro i; ring
+    simp_rw [hpt]
+    rw [Finset.sum_add_distrib, Finset.sum_sub_distrib]
+    rw [show (∑ i ∈ T, 2 * s i) = 2 * ∑ i ∈ T, s i by
+      rw [show (∑ i ∈ T, 2 * s i) = ∑ i ∈ T, s i * 2 by
+        apply Finset.sum_congr rfl; intro i _; ring]
+      rw [← Finset.sum_mul]; ring]
+    rw [show (∑ _i ∈ T, (1:ℝ)) = (T.card : ℝ) by simp]
+    ring
+  have hR : (∑ i ∈ T, (s i - m) ^ 2)
+      = (∑ i ∈ T, s i ^ 2) - 2 * m * (∑ i ∈ T, s i) + (T.card : ℝ) * m ^ 2 := by
+    have hpt : ∀ i, (s i - m) ^ 2 = s i ^ 2 - 2 * m * s i + m ^ 2 := by intro i; ring
+    simp_rw [hpt]
+    rw [Finset.sum_add_distrib, Finset.sum_sub_distrib]
+    rw [show (∑ i ∈ T, 2 * m * s i) = 2 * m * ∑ i ∈ T, s i by
+      rw [show (∑ i ∈ T, 2 * m * s i) = ∑ i ∈ T, s i * (2 * m) by
+        apply Finset.sum_congr rfl; intro i _; ring]
+      rw [← Finset.sum_mul]; ring]
+    rw [show (∑ _i ∈ T, m ^ 2) = (T.card : ℝ) * m ^ 2 by
+      rw [Finset.sum_const, nsmul_eq_mul]]
+  rw [hL, hR, ← hmul]
+  ring
+
+/-- **Jensen lower bound**: the mean-field plug-in never exceeds the exact
+variance coefficient, `D(1 − s̄)^2 ≤ d_eff(ρ)`, with equality iff all pulls
+are equal.  Hence the runtime rule underestimates the variance coefficient
+and returns a window no smaller than the exact-optimal one. -/
+theorem deff_sub_plugin_nonneg {ι : Type*} (T : Finset ι) (s : ι → ℝ) (hcard : T.card ≠ 0) :
+    0 ≤ (∑ i ∈ T, (1 - s i) ^ 2)
+      - (T.card : ℝ) * (1 - (∑ i ∈ T, s i) / (T.card : ℝ)) ^ 2 := by
+  rw [deff_sub_plugin T s hcard]
+  exact Finset.sum_nonneg (fun i _ => sq_nonneg _)

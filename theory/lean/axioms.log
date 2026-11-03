@@ -12,6 +12,8 @@
 'refresh_variance_form' depends on axioms: [propext, Classical.choice, Quot.sound]
 'refresh_variance_lt' depends on axioms: [propext, Classical.choice, Quot.sound]
 'refresh_variance_lb' depends on axioms: [propext, Classical.choice, Quot.sound]
+'deff_sub_plugin' depends on axioms: [propext, Classical.choice, Quot.sound]
+'deff_sub_plugin_nonneg' depends on axioms: [propext, Classical.choice, Quot.sound]
 'naive_dial_no_fixed_point' depends on axioms: [propext, Classical.choice, Quot.sound]
 'debiased_dial_contraction' depends on axioms: [propext, Classical.choice, Quot.sound]
 'window_second_deriv_pos' depends on axioms: [propext, Classical.choice, Quot.sound]

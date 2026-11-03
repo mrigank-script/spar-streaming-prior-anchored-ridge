@@ -23,6 +23,8 @@ import SparTheorems
 #print axioms refresh_fixed_point
 #print axioms refresh_contraction_rate
 #print axioms refresh_variance_lb
+#print axioms deff_sub_plugin
+#print axioms deff_sub_plugin_nonneg
 #print axioms joint_tracking
 #print axioms joint_geometric_pinned
 #print axioms window_second_deriv_pos
