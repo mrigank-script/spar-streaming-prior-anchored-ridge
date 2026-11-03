@@ -23,7 +23,7 @@ The learner maintains sufficient statistics
 \]
 with forgetting $\alpha \in (0,1]$ and initialization from a warm-up set of $T_w$ samples.
 Write $\bar A_t = A_t/n_t$ with eigendecomposition $\bar A_t = U\,\mathrm{diag}(\mu_1,\dots,\mu_D)\,U^\top$ and $\bar b_t = B_t/n_t$; an index $i$ always refers to the coordinate in this eigenbasis.
-\emph{Two design models.} Lemma~\ref{lem:zerolag} and Theorems~\ref{thm:cadence}--\ref{thm:window} are proved in the \emph{mean-field} model $\bar A_t \equiv \Sigma$, i.e.\ the random accumulator is replaced by its population expectation; this is the model in which the lag, the variance factor $\Psi$, and the window target are exact. Theorem~\ref{thm:rmt} is the finite-$D$ \emph{random-design} correction: it retains the random $\bar A_t$ and takes the proportional limit $\zeta = D\omega$ fixed. The two agree as $\zeta \to 0$; the grid's pre-drift windows have $\zeta \le 0.13$, while drift-phase windows reach $\zeta \le 6.4$, where the mean-field target is a control law, not the exact optimum (Appendix~\ref{app:proofs}, ``Regime of the first-order variance term'').
+\emph{Two design models.} Lemma~\ref{lem:zerolag} and Theorems~\ref{thm:cadence}--\ref{thm:window} are proved in the \emph{mean-field} model $\bar A_t \equiv \Sigma$, i.e.\ the random accumulator is replaced by its population expectation; this is the model in which the lag, the variance factor $\Psi$, and the window target are exact. Theorem~\ref{thm:rmt} is the finite-$D$ \emph{random-design} correction: it retains the random $\bar A_t$ and takes the proportional limit $\zeta = D\omega$ fixed. The two agree as $\zeta \to 0$; the grid's pre-drift windows have $\zeta \le 0.13$, while drift-phase windows reach $\zeta \le 6.4$, where the exact random-design variance of Theorem~\ref{thm:rmt} replaces the mean-field leading-order term so the cycle-averaged optimum is available across the whole range (Appendix~\ref{app:proofs}, ``Exact finite-window variance term'').
 The anchored solve with anchor $G_t$ and strength $\rho > 0$ is $W_t = (A_t + n_t\rho I)^{-1}(B_t + n_t\rho G_t)$; in the eigenbasis, coordinate $i$ is the scalar problem
 \begin{equation}
 \label{eq:app-anchored}
@@ -178,6 +178,7 @@ Summing the two contributions gives
   \qquad c' = \sigma^2\,d_{\mathrm{eff}}(\rho),
 \end{equation}
 to leading order in $\omega$, $R(\omega) = c'\omega/2 + \nu^2_\Sigma/\omega^2 + O(\omega^2)$.
+The exact random-design refinement of the variance term is $\sigma^2\Upsilon(\omega;\rho)/(1-\Upsilon(\omega;\rho))$ (Theorem~\ref{thm:rmt}(i)), equal to it as $\zeta \to 0$ and accurate to within $5\%$ over the whole grid range, so the small-$\zeta$ restriction of the mean-field form is removed (exact-variance note below).
 
 \emph{Step 2 (convexity and minimizer).}
 Both terms of \eqref{eq:app-window-risk} are strictly convex on $(0, 2)$, since
@@ -258,8 +259,14 @@ At that point the random-walk risk $R_{\mathrm{RW}}(\omega) = c'\omega/(2-\omega
 \end{proof}
 
 \medskip
-\noindent\emph{Regime of the first-order variance term.}
-The variance term is exact for the stated risk model; its leading-order form is accurate for aspect ratios $\zeta = D\omega \lesssim 0.3$, the regime of the pre-drift and low-drift phases on our grid ($\zeta \le 0.13$ at the window floor), and understates the estimator's variance at the larger ratios reached during drift-phase adaptation (windows $0.01$--$0.05$, $\zeta$ up to $6.4$), where the estimator remains a valid control law but its target departs from the exact optimum.
+\noindent\emph{Exact finite-window variance term.}
+The mean-field term $c'\,\omega/(2-\omega)$ is the $\zeta \to 0$ limit of the exact random-design variance $\sigma^2\Upsilon(\omega;\rho)/(1-\Upsilon(\omega;\rho))$ of Theorem~\ref{thm:rmt}(i): the expansion of Appendix~\ref{app:rmt-variance} gives $\sigma^2\Upsilon/(1-\Upsilon) \to \tfrac12\sigma^2\omega\,d_{\mathrm{eff}}(\rho)$.
+Using the exact form in the cycle-averaged risk,
+\[
+R(\omega,\rho) \;=\; \frac{\sigma^2\,\Upsilon(\omega;\rho)}{1-\Upsilon(\omega;\rho)} + \frac{\nu^2_\Sigma}{\omega^2},
+\]
+removes the small-$\zeta$ restriction: over the whole grid range $\zeta \in [0.26, 6.4]$ the exact form matches the Monte Carlo stationary risk to within $5\%$ (median $2.4\%$), whereas the mean-field term deviates by up to $100\%$ at $\zeta = 6.4$ (\texttt{diagnostics.py} \texttt{--diag exactrisk}; \texttt{results/exact\_risk.csv}).
+The runtime keeps the mean-field plug-in $\hat c'_t$, whose Jensen gap is the conservative direction of Appendix~\ref{app:proofs}; the exact form is the analysis-level statement of the window law, available at every window from the closing eigenvalues, not a runtime change.
 
 \subsection{Proof of Proposition~\ref{prop:conflict}(i) (oracle dominance)}
 \label{app:proof-dominance}

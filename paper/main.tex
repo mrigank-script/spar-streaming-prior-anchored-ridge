@@ -508,7 +508,7 @@ The empirical claims are about the calibrated method on the streams studied, not
 \toprule
 dimension & assumption or protocol & consequence outside it \\
 \midrule
-design model & Theorems~\ref{thm:cadence}--\ref{thm:window} use the mean-field accumulator; Theorem~\ref{thm:rmt} retains the random design & the mean-field target is a control law at $\zeta \le 6.4$ (drift phase); the finite-$D$ correction is the relevant statement there \\
+design model & Theorems~\ref{thm:cadence}--\ref{thm:window} use the mean-field accumulator; Theorem~\ref{thm:rmt} retains the random design & at drift-phase $\zeta \le 6.4$ the exact random-design variance replaces the mean-field term in the cycle-averaged risk; the runtime keeps the conservative mean-field plug-in \\
 spectrum & Theorem~\ref{thm:rmt} assumes the nonzero part is bounded away from zero, $\tau_{\min}^+>0$; rank-deficient spectra reduce exactly to $\operatorname{range}(\Sigma)$ (Corollary~\ref{cor:rmt-active}) & null directions drop out of the prediction risk, so the deterministic equivalent holds once the diagnostic spectrum matches the generator's active directions \\
 contraction & Theorem~\ref{thm:closedloop} is local at an interior fixed point with the clip inactive & the global statement keeps the measured-product hypothesis and the gate \\
 moving targets & fixed-protocol grid, 27 configurations & unanchored information-form leaky RLS wins $12/18$ moving-target configurations; SPAR wins all $9$ static-target covariance-rotation configurations \\
