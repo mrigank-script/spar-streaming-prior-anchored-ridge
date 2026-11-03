@@ -527,9 +527,8 @@ The finite-cadence refresh equilibrium is the central object: it gives the track
 The random-matrix correction extends the law to finite dimension, where the anchor is renormalized by the finite window; the correction is accurate on full-rank and rank-deficient spectra, the latter reducing exactly to the active subspace.
 The Lean artifact formalizes the algebraic core, the refresh chain, the regret bounds, and the coupled contraction.
 
-One question remains open.
-The closed-form stationary law for the coupled estimators is not known; the moment recursion is the current analytic handle.
-It does not affect the calibrated method on the streams studied here.
+The coupled stationary law is the unique fixed point of the composition of the two target maps, a contraction at the coupling rate $L_{\omega\rho}L_{\rho\omega}<1$; it is given by the convergent fixed-point series $\rho^*=\sum_m(\rho_{m+1}-\rho_m)$, and no single elementary closed form is available because the defining equation is transcendental.
+The stochastic law's mean is that fixed point, with second moment bounded by Proposition~\ref{prop:fluct}.
 
 \bibliographystyle{tmlr}
 \bibliography{references}
