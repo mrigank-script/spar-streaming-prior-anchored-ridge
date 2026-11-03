@@ -203,7 +203,23 @@ and overestimating the window is safe, mirroring Proposition~\ref{prop:minimax}.
 The finite-cadence risk \eqref{eq:app-window-risk} combines Theorem~\ref{thm:cadence}'s two exact steady-state objects: the per-direction variance is $v_i\Psi(s_i,r_k)$ with $v_i=\sigma^2/(n_{\mathrm{eff}}\mu_i)$, and the per-direction lag is $\nu_i/\omega+\Delta_k(s_i)$; the within-cycle fluctuation contributes the $O(k^2\nu^2s^2)$ term derived in Appendix~\ref{app:cadence}.
 Because $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for all $r_k \in [0,1)$ (\texttt{refresh\_variance\_lb}), the frozen-anchor surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ lower-bounds the exact cycle-averaged variance term at every cadence, and $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$ by Jensen; the runtime plug-in therefore underestimates the variance coefficient, returning a window no smaller than the exact-optimal one---the over-forgetting, safety-asymmetric direction of Step~4.
 The finite-cadence lag residual is bounded at the runtime range: with $b(s)=s(2-s)/(1-s)^2$ and $k\omega \le 1/2$, $\Delta_k(s_i)=s_i\nu_i k\bigl(b(s_i)+\tfrac12\bigr)\le \tfrac12 s_i\bigl(b(s_i)+\tfrac12\bigr)\nu_i/\omega$, a vanishing fraction of the leading lag ($\le 0.4\%$ for $s_i\le 0.1$ at $k\omega=0.5$) whose prediction cost $\mu_i\Delta_k(s_i)^2$ is concentrated in weakly excited directions.
-Numerically, over $k\omega \in [0.005,0.5]$ the surrogate's cubic minimizer is within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ ($5.2\%$ for $s_i \le 0.3$), with the largest gaps at the window floor (\texttt{diagnostics.py --diag subopt}; \texttt{results/window\_subopt.csv}).
+\begin{proposition}[Surrogate value gap]
+\label{prop:gap}
+Let $R_s(\omega) = c'\,\omega/(2-\omega) + D\nu^2/\omega^2$ be the frozen-anchor surrogate and $R = R_s + \varepsilon$ the exact cycle-averaged risk, with
+$\varepsilon(\omega) = c_v(\omega)\,[\Psi(s,r_k)-(1-s)^2] + 2D(\nu/\omega)\Delta_k(s) + D\Delta_k(s)^2 \ge 0$, where $c_v(\omega) = \sigma^2 D\,\omega/(2-\omega)$.
+If $\omega_s$ minimizes $R_s$, then
+\[
+R(\omega_s) - \min_\omega R \;\le\; \varepsilon(\omega_s) - \inf_\omega \varepsilon,
+\qquad\text{so}\qquad
+\frac{R(\omega_s)}{\min_\omega R} - 1 \;\le\; \frac{\varepsilon(\omega_s) - \inf_\omega \varepsilon}{\min_\omega R},
+\]
+because $\min_\omega(R_s + \varepsilon) \ge \min_\omega R_s + \inf_\omega \varepsilon = R_s(\omega_s) + \inf_\omega\varepsilon$.
+\end{proposition}
+\begin{proof}
+The bound is subadditivity of the minimum; both terms of $\varepsilon$ are nonnegative because $\Psi(s,r_k) \ge (1-s)^2$ (\texttt{refresh\_variance\_lb}) and $\Delta_k(s) \ge 0$.
+\end{proof}
+
+Numerically, over $k\omega \in [0.005,0.5]$ the surrogate's cubic minimizer is within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ ($5.2\%$ for $s_i \le 0.3$), with the largest gaps at the window floor; the certificate of Proposition~\ref{prop:gap} holds at all $40$ grid points and is at most $39\%$ over the whole range (\texttt{diagnostics.py --diag subopt}; \texttt{results/window\_subopt.csv}, column \texttt{bound}).
 In the quasi-static limit $1 \ll k\omega \ll 1/s$, $r_k=(1-\omega)^k \le e^{-\omega k} \to 0$, so $\Psi(s_i,r_k)=(1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i)=o(\nu_i/\omega)$; both corrections vanish and the reduced form \eqref{eq:app-window-risk} is exact, with remainder $o(1)$ uniformly over the regime.
 
 \textbf{Step 1 (risk decomposition).}
