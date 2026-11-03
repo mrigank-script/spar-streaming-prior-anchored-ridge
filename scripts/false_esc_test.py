@@ -7,9 +7,11 @@ the two-scale residual CUSUM statistic
     z_t = (sigma2_fast - sigma2_slow) / sigma2_true
 
 and measures the empirical rate at which max_t z_t exceeds the analytic
-windowed-Hoeffding threshold tau(delta) = sigma2 * sqrt(2 log(T/delta) / m)
-with m = resid_fast (the fast EMA horizon). Proposition 3 predicts the false
-rate is <= delta. We report empirical vs nominal for several delta.
+sliding-EMA threshold tau(delta) = sigma_z * sqrt(2 log(T/delta) / m_eff)
+with the effective count m_eff = (2 - eta_f)/eta_f of the fast geometric
+weights w_k = eta_f (1 - eta_f)^k (sum_k w_k^2 = 1/m_eff) and the Gaussian
+excess proxy nu_z^2 = 2. Proposition 3 predicts the false rate is <= delta.
+We report empirical vs nominal for several delta.
 """
 
 import os
@@ -34,7 +36,10 @@ def main() -> None:
     N = 300
     D, T, T_warm = 64, 5000, 1500
     sigma2_true = 0.01
-    m_eff = 100  # resid_fast horizon
+    resid_fast = 100                    # fast-EMA horizon
+    eta_f = 1.0 / resid_fast            # fast-EMA gain
+    m_eff = (2.0 - eta_f) / eta_f       # sliding-EMA weight energy: sum_k w_k^2 = 1/m_eff
+    nu_z2 = 2.0                         # Gaussian squared-residual excess variance proxy
 
     max_z = {s: [] for s in ("iso", "decay3")}
     for spectrum in ("iso", "decay3"):
@@ -52,7 +57,7 @@ def main() -> None:
     print(f"{'delta':>8} {'nominal tau/sgm2':>18} {'empirical rate':>16}"
           f" {'<= nominal?':>12}")
     for delta in (0.10, 0.05, 0.01):
-        tau = np.sqrt(2.0 * np.log(T / delta) / m_eff)
+        tau = np.sqrt(2.0 * nu_z2 * np.log(T / delta) / m_eff)
         row = f"{delta:>8.2f} {tau:>18.3f}"
         ok_all = True
         rates = []
