@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "aal"
-version = "0.1.0"
+version = "0.2.0"
 description = "Anchored Analytic Learning: backprop-free closed-form streaming models"
 requires-python = ">=3.10"
 # Core runtime dependencies only; the full script/benchmark/test dependencies

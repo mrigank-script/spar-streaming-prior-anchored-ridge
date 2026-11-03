@@ -9,6 +9,9 @@ This is the companion code for the manuscript in `paper/` (`paper/main.tex`,
 built with `paper/build.cmd`). Every number and figure in the paper is
 machine-printed into `results/` by the scripts below.
 
+Version 0.2.0; see `CHANGELOG.md` for the upgrade cycle and `VERSION` for the
+released version.
+
 ## Layout
 
 | Path | Contents |

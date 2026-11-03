@@ -33,6 +33,8 @@ ROOT = Path(__file__).resolve().parents[1]
 # Files shipped verbatim from the repository root.
 ROOT_FILES = [
     "README.md",
+    "CHANGELOG.md",
+    "VERSION",
     "pyproject.toml",
     "requirements.txt",
     "requirements-wsl.txt",
