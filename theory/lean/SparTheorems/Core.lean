@@ -12,6 +12,8 @@ elementary real analysis over ℝ; no probability is mechanized.
 ### Pull Identity
 * `pull_identity`                : exact per-direction decomposition (γ = 1)
 * `pull_identity_general`       : the same, with anchor shrinkage γ
+* `eigenbasis_solve_coord`     : diagonal anchored solve decouples coordinatewise
+* `eigenbasis_pull_identity`  : γ = 1 pull identity in the eigenbasis
 
 ### Interpolation and Calibration
 * `convex_interp_sq`            : exact interpolation identity, excess = s(1−s)(u−d)²
@@ -657,3 +659,31 @@ theorem pull_weight_bounds (μ ρ : ℝ) (hμ : 0 ≤ μ) (hρ : 0 < ρ) :
   refine ⟨by positivity, ?_, by positivity, ?_⟩
   · rw [div_lt_one hd]; linarith
   · rw [div_le_one hd]; linarith
+
+/-! ## Eigenbasis Specialization of the Pull Identity
+
+In the eigenbasis of the accumulator the anchored solve is a diagonal system,
+so it decouples coordinatewise into scalar anchored solves.  Each coordinate
+is the `γ = 1` pull interpolation of the data solve and the anchor with weight
+`s_i = ρ/(μ_i + ρ)`. -/
+
+/-- **Eigenbasis decoupling**: in a diagonal basis the anchored solve's
+`i`-th coordinate `(b_i + ρ g_i)/(μ_i + ρ)` satisfies the scalar anchored
+equation `(μ_i + ρ) w_i = b_i + ρ g_i`. -/
+theorem eigenbasis_solve_coord {n : Type*} [Fintype n] [DecidableEq n]
+    (μ b g : n → ℝ) (ρ : ℝ) (hμ : ∀ i, μ i + ρ ≠ 0) (i : n) :
+    (Matrix.diagonal (fun j => μ j + ρ)
+        *ᵥ (fun j => (b j + ρ * g j) / (μ j + ρ))) i
+      = b i + ρ * g i := by
+  rw [Matrix.mulVec_diagonal]
+  field_simp [hμ i]
+
+/-- **Eigenbasis pull identity (`γ = 1`)**: the coordinatewise anchored solve
+interpolates the data solve and the anchor with weight `s_i = ρ/(μ_i + ρ)`. -/
+theorem eigenbasis_pull_identity {n : Type*} (μ b g wstar : n → ℝ) (ρ : ℝ)
+    (hμ : ∀ i, μ i ≠ 0) (hμρ : ∀ i, μ i + ρ ≠ 0) (i : n) :
+    (b i + ρ * g i) / (μ i + ρ) - wstar i
+      = (μ i / (μ i + ρ)) * (b i / μ i - wstar i)
+        + (ρ / (μ i + ρ)) * (g i - wstar i) := by
+  have h := pull_identity (μ i) ρ (b i) (g i) (wstar i) (hμ i) (hμρ i)
+  simpa using h
