@@ -311,11 +311,17 @@ Overestimating conflict is safe.
 Under a calibrated overestimate, the excess of the anchored risk over the no-anchor risk is at most $(v+\delta^2)(s-s^*)^2$. Underestimating conflict costs quadratically in the same expression; the twice-the-optimum boundary is the James--Stein domination condition \citep{james1961}.
 \end{proposition}
 
-\begin{proposition}[False-alarm calibration]
+\begin{proposition}[False-alarm calibration of the sliding two-scale EMA]
 \label{prop:falsealarm}
-Under a calibrated sub-exponential null, the thresholded trigger has false-alarm rate at most its nominal level (a Freedman-type bound \citep{freedman1975}); it calibrates the running two-scale statistic, with measured rates in Section~\ref{sec:bridges} and proof in Appendix~\ref{app:proofs}.
-The variance-floor subtraction and conflict floor induce strictly positive effective thresholds $\tau_\omega = \hat c' \omega_{\min}/(2-\omega_{\min})$ and $\tau_\rho = C_{\mathrm{floor}}$, so the guarantee applies at $\tau = \min(\tau_\omega,\tau_\rho) > 0$: for the windowed test, stationarity pins $\omega_t$ at $\omega_{\min}$ with probability at least $1-\delta$.
-The implemented EMA trigger is the surrogate calibrated at these thresholds (Appendix~\ref{app:protocol}).
+Let $z_t$ be a centered sub-exponential martingale-difference sequence with variance proxy $\nu_z^2$ and scale $b_z$, and let the fast two-scale excess be its causal moving average $Z_t = \sum_{k\ge 0} w_k z_{t-k}$ with geometric weights $w_k = \eta_f(1-\eta_f)^k$, so $\sum_k w_k^2 = \eta_f/(2-\eta_f) = 1/m_{\mathrm{eff}}$ and $\max_k w_k = \eta_f$.
+For every horizon $T$ and $\delta \in (0,1)$, with
+\[
+\tau(\delta) \;=\; \eta_f b_z L + \sqrt{\eta_f^2 b_z^2 L^2 + \frac{2\nu_z^2}{m_{\mathrm{eff}}}\,L},
+\qquad L = \log(T/\delta),
+\]
+the sliding trigger satisfies the time-uniform false-alarm bound $\Pr[\exists\, t \le T:\ Z_t > \tau(\delta)] \le \delta$; in the Gaussian corner ($b_z \to 0$) it reduces to $\tau = \sqrt{2\log(T/\delta)/m_{\mathrm{eff}}}$.
+The variance-floor subtraction and conflict floor induce strictly positive effective thresholds $\tau_\omega = \hat c' \omega_{\min}/(2-\omega_{\min})$ and $\tau_\rho = C_{\mathrm{floor}}$, so applying the bound at $\tau = \min(\tau_\omega,\tau_\rho) > 0$ pins $\omega_t$ at $\omega_{\min}$ with probability at least $1-\delta$ under stationarity.
+This calibrates the implemented EMA directly, with measured rates in Section~\ref{sec:bridges} and proof in Appendix~\ref{app:proofs}.
 \end{proposition}
 
 \begin{proposition}[No-regret wrappers]

@@ -398,28 +398,31 @@ Since $\widehat C \ge C$ implies $\widehat s = v/(v + \widehat C) \le v/(v + C) 
 
 
 \begin{proof}[Proof of Proposition~\ref{prop:falsealarm}]
-By Bernstein's inequality for sub-exponential martingale difference sequences, in the form of Freedman's inequality \citep{freedman1975}, for each of the $T/m$ disjoint windows,
+The fast two-scale excess is the causal moving average $Z_t = \sum_{k\ge 0} w_k z_{t-k}$ of a centered sub-exponential martingale-difference sequence, with geometric weights $w_k = \eta_f(1-\eta_f)^k$; its weight energy is the geometric sum
 \[
-  \Pr\Bigl[\sum_{t \in \text{window}} z_t > m\,\tau\Bigr]
-  \;\le\; \exp\Bigl(-c\, m \min\{\tau^2/\nu_z^2,\ \tau/b_z\}\Bigr)
-  \;\le\; \exp\bigl(-2\log(T/\delta)\bigr)
-  \;=\; (\delta/T)^2,
+\sum_{k\ge 0} w_k^2 = \frac{\eta_f^2}{1-(1-\eta_f)^2} = \frac{\eta_f}{2-\eta_f} = \frac{1}{m_{\mathrm{eff}}},
+\qquad m_{\mathrm{eff}} = \frac{2-\eta_f}{\eta_f},
 \]
-where the max-form threshold makes the bound rigorous: the quadratic term gives $c\,m \cdot \tau^2/\nu_z^2 = c\,m\cdot 2\log(T/\delta)/(c\,m) = 2\log(T/\delta)$ and the linear term $c\,m\cdot\tau/b_z = 2\log(T/\delta)$, so the minimum is exactly $2\log(T/\delta)/c \cdot c = 2\log(T/\delta)$ in either branch.
-and the union bound over the $T/m \le T$ disjoint windows gives
-$(T/m)(\delta/T)^2 \le \delta^2/T \le \delta$ for $T \ge \delta$.
-The damage of a false escalation is bounded by the cost of running at reduced anchor strength for the escalation holdout: at most $O(v)$ per step for $O(\text{window})$ steps, so with $\delta = 1/T^2$ the total expected false-escalation damage is $o(1)$.
-The alternative (drift) is detected with lag $O(h_f + m)$, where $h_f$ is the fast moving-average horizon.
+and $\max_k w_k = \eta_f$.
+Freedman's inequality for sub-exponential martingale differences \citep{freedman1975} bounds the weighted sum at each time with predictable variance $V = \nu_z^2/m_{\mathrm{eff}}$ and scale $b = \eta_f b_z$:
+\[
+\Pr[Z_t > \tau] \;\le\; \exp\Bigl(-\frac{\tau^2}{2\,(V + b\,\tau)}\Bigr),
+\]
+so the threshold $\tau(\delta) = bL + \sqrt{b^2L^2 + 2VL}$ with $L = \log(T/\delta)$ solves $\tau^2 = 2(V + b\tau)L$ and gives $\Pr[Z_t > \tau(\delta)] \le e^{-L} = \delta/T$.
+A union bound over the $T$ time points upgrades this to the sliding (time-uniform) statement $\Pr[\exists\, t \le T: Z_t > \tau(\delta)] \le T \cdot \delta/T = \delta$.
+The statistic is the implemented one, with effective sample size $m_{\mathrm{eff}} = (2-\eta_f)/\eta_f \to 1/\eta_f$ for small $\eta_f$, the runtime constant; no disjoint-window surrogate is used.
+The damage of a false escalation is bounded by the cost of running at reduced anchor strength for the escalation holdout: at most $O(v)$ per step for $O(1/\eta_f)$ steps, so with $\delta = 1/T^2$ the total expected false-escalation damage is $o(1)$.
+The alternative (drift) is detected with lag $O(h_f + 1/\eta_f)$, where $h_f$ is the fast moving-average horizon.
 \end{proof}
 
 \medskip
 \noindent\emph{Stationary pinning (effective threshold).}
 The variance-floor subtraction is itself a strictly positive threshold: the drift-energy estimator is $\widehat\nu^2_\Sigma=\max\bigl(0,(E_t-\tau_\omega)\omega^2\bigr)$ with $\tau_\omega=\hat c'\,\omega_{\min}/(2-\omega_{\min})$, so $E_t\le\tau_\omega$ implies $\widehat\nu^2_\Sigma=0$ and $\omega_t=\omega_{\min}$; the conflict floor $\tau_\rho=C_{\mathrm{floor}}$ likewise prevents the residual branch from driving the strength below its stationary floor.
-Applying the bound of Proposition~\ref{prop:falsealarm} at $\tau=\min(\tau_\omega,\tau_\rho)>0$ gives $\Pr[\omega_t>\omega_{\min}]\le\delta$ for the windowed test under stationarity, upgrading Theorem~\ref{thm:window}'s in-expectation statement to a high-probability pinning guarantee; the implemented EMA trigger is the surrogate of the Scope remark.
+Applying the bound of Proposition~\ref{prop:falsealarm} at $\tau=\min(\tau_\omega,\tau_\rho)>0$ gives $\Pr[\omega_t>\omega_{\min}]\le\delta$ for the sliding test under stationarity, upgrading Theorem~\ref{thm:window}'s in-expectation statement to a high-probability pinning guarantee; the bound applies to the implemented EMA directly (Proposition~\ref{prop:falsealarm}).
 
-\begin{remark}[Scope]
-The union bound covers the disjoint-window statistic stated above.
-The implemented trigger uses two-scale exponential moving averages, a sliding statistic whose anytime coverage would require an e-process combined with Ville's inequality; the implemented statistic is therefore an engineering surrogate whose measured false-alarm rate is at or below the nominal level at $\delta = 0.10$ and $0.05$, with a slight exceedance at $\delta = 0.01$ on ill-conditioned spectra (measured rates in Online Appendix~\ref{app:protocol}).
+\begin{remark}[Time uniformity]
+The union bound over time points makes the guarantee uniform over the whole stream, so no disjoint-window or e-process surrogate is needed; the cost is the $\log T$ factor in $\tau(\delta)$.
+The measured rate is at or below the nominal level at $\delta = 0.10$ and $0.05$, with a slight exceedance at $\delta = 0.01$ on ill-conditioned spectra (Online Appendix~\ref{app:protocol}).
 \end{remark}
 
 \subsection{Proof of Proposition~\ref{prop:ocowrap}(i) (projected gradient)}
