@@ -915,7 +915,14 @@ At an interior fixed point the product of cross-sensitivities is invariant under
 (a) when $C^\Sigma_{\mathrm{floor}}$ is active, $\widehat C$ is independent of $\omega$, and $|\partial \ln \rho^*/\partial \ln \omega| \le 2/(2-\omega)$;
 (b) when $C^\Sigma_{\mathrm{resid}} = E_t$ is active, the drift-active floor $\rho_{\min}^{\mathrm{drift}}$ pins $\rho$, so $L_{\rho\omega} = 0$ and the system is triangular (Theorem~\ref{thm:closedloop}(ii));
 (c) when $C^\Sigma_{\mathrm{ref}}$ is active at stationarity ($\nu = 0$), $\widehat w$ is unbiased for $w^*$ in the mean-field limit, so the reference branch is independent of $\omega$ to leading order in $1/n$ and $L_{\rho\omega} = 0$; away from stationarity it inherits the same $(\omega/(2-\omega))$ scaling as (a), with the constant absorbed into $\bar s$.
-Branches (b) and (c) are leading-order statements in $1/n$; at finite $n$ they carry $O(1/n)$ corrections that we do not bound.
+Branches (b) and (c) carry explicit finite-$n$ corrections. In branch (b) the drift-active floor fixes $\rho$ exactly, so $L_{\rho\omega} = 0$; the residual dependence is only the branch-selection margin, bounded by the $O(1/n)$ fluctuation of the residual excess $E_t$.
+In branch (c), under the quasi-static estimator block of Theorem~\ref{thm:closedloop}, the computed quadratic form $R = (G_{\mathrm{ref}}-\widehat w)^\top \bar A_t (G_{\mathrm{ref}}-\widehat w)$ is $\omega$-independent, so the runtime estimate $\widehat C_{\mathrm{ref}}(\omega) = R - \widehat V(\omega)$ has the single explicit $\omega$-dependence of the debiasing term $\widehat V(\omega) = \widehat\sigma^2 d_{\mathrm{act}}\,\omega/(2-\omega)$; differentiating $\rho^* = \bar\mu\widehat V/\widehat C_{\mathrm{ref}}$,
+\[
+\bigl|L_{\rho\omega}^{(c)}\bigr|
+= \frac{2}{2-\omega}\Bigl(1 + \frac{\widehat V}{|\widehat C_{\mathrm{ref}}|}\Bigr),
+\]
+the leading coefficient plus the measurable debiasing ratio $\widehat V/|\widehat C_{\mathrm{ref}}| = \rho^*/\bar\mu$ at the fixed point, in place of an unbound $O(1/n)$.
+The measured coupling product is below $6\times10^{-3}$ across all $20$ diagnostic runs, with one quantity pinned in three of four configurations (\texttt{results/coupling\_diag.csv}).
 The coupling product in log-coordinates is therefore at most
 \begin{equation}
 \label{eq:rmt-coupling}
