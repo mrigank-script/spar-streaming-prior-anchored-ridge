@@ -760,12 +760,53 @@ def diag_subopt() -> None:
     print("saved results/window_subopt.csv")
 
 
+def diag_exactrisk() -> None:
+    """Exact random-design cycle-averaged variance vs the mean-field
+    leading-order term over the full aspect-ratio range.
+
+    The mean-field coefficient ``c' omega/(2-omega)`` is the zeta -> 0 limit
+    of the exact random-design variance ``sigma^2 Upsilon/(1-Upsilon)`` of
+    Theorem 4(i); the latter is available at every window and removes the
+    small-zeta restriction.
+    """
+    vrows = []
+    print("=== exact vs mean-field stationary variance across zeta ===")
+    print(f"{'spec':<8} {'rho':>6} {'n_eff':>6} {'zeta':>6} | {'MC':>9} "
+          f"{'exact':>9} {'mean-field':>10} | {'err_ex':>7} {'err_mf':>7}")
+    for kind in ("iso", "decay3", "rankdef"):
+        lam = rmt_spectrum(kind)
+        for rho in (1e-2, 1e-1):
+            for n_eff in (500, 100, 50, 20):
+                w = 1.0 / n_eff
+                zeta = RMT_D * w
+                _, _, _, v_ex, _ = rmt_formulas(lam, w, rho)
+                d_eff = float(np.sum((lam / (lam + rho)) ** 2))
+                v_mf = RMT_SIGMA2 * d_eff * w / (2 - w)
+                mc = rmt_mc_fixed(kind, w, rho)
+                eb = abs(mc - v_ex) / mc
+                em = abs(mc - v_mf) / mc
+                vrows.append(dict(spectrum=kind, rho=rho, n_eff=n_eff,
+                                 zeta=zeta, mc=mc, exact=v_ex, mean_field=v_mf,
+                                 err_exact=eb, err_mean_field=em))
+                print(f"{kind:<8} {rho:>6} {n_eff:>6} {zeta:>6.2f} | {mc:>9.5f} "
+                      f"{v_ex:>9.5f} {v_mf:>10.5f} | {100*eb:>6.1f}% "
+                      f"{100*em:>6.1f}%")
+
+    dv = pd.DataFrame(vrows)
+    dv.to_csv(RES / "exact_risk.csv", index=False)
+    print(f"\nexact median err {dv.err_exact.median():.1%}  "
+          f"max {dv.err_exact.max():.1%}; mean-field max "
+          f"{dv.err_mean_field.max():.1%}")
+    print("saved results/exact_risk.csv")
+
+
 # ================================================================= dispatch
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--diag", default="all",
                         choices=["vff", "windup", "sgd", "coupling",
-                                 "rmt", "rankdef", "alt_trust", "subopt", "all"])
+                                 "rmt", "rankdef", "alt_trust", "subopt",
+                                 "exactrisk", "all"])
     args = parser.parse_args()
     which = (["vff", "windup", "sgd", "coupling", "rmt", "alt_trust",
               "subopt"]
@@ -773,7 +814,8 @@ def main() -> None:
     fns = {"vff": diag_vff, "windup": diag_windup, "sgd": diag_sgd,
            "coupling": diag_coupling, "rmt": diag_rmt,
            "rankdef": diag_rmt_rankdef,
-           "alt_trust": diag_alt_trust, "subopt": diag_subopt}
+           "alt_trust": diag_alt_trust, "subopt": diag_subopt,
+           "exactrisk": diag_exactrisk}
     for name in which:
         print(f"\n=== diagnostics: {name} ===", flush=True)
         fns[name]()
