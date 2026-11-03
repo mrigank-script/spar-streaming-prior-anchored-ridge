@@ -51,7 +51,7 @@ Recursive estimators on drifting streams must forget stale data fast enough to t
 For prior-anchored ridge regression this balance has a closed-form optimum: per eigen-direction the anchored solve is a convex combination of the data solution and the prior, with weight $s_i=\rho/(\mu_i+\rho)$.
 We derive the finite-cadence refresh equilibrium of the resulting recursion: at cadence $k$ the solution lags the pure-leaky path by a closed-form $\Delta_k(s)$, and its variance is reduced by an explicit factor $\Psi(s,r_k)$.
 Minimizing the cycle-averaged risk gives the optimal forgetting rate $\omega^*=(4\nu^2_\Sigma/c')^{1/3}$ with $c'=\sigma^2d_{\mathrm{eff}}(\rho)$, together with the plug-in anchor strength $\rho^*=\sigma^2/(n\delta^2)$.
-A random-matrix deterministic equivalent extends both laws to finite dimension, where the anchor is renormalized to $\rho_{\mathrm{eff}}=\rho(e^{\zeta q}-1)/(\zeta q)$; on full-rank spectra it matches simulation within $5\%$ at fixed operating points and within $13\%$ at the method's own operating points, the conflict increment is accurate within $11\%$, and we delimit the rank-deficient boundary.
+A random-matrix deterministic equivalent extends both laws to finite dimension, where the anchor is renormalized to $\rho_{\mathrm{eff}}=\rho(e^{\zeta q}-1)/(\zeta q)$; it matches simulation within $5\%$ at fixed operating points and within $13\%$ at the method's own operating points, the conflict increment is accurate within $9.5\%$, and rank-deficient populations reduce exactly to their active subspace.
 The resulting method, SPAR, calibrates its window and strength from streaming residuals: the conflict-calibrated strength falls on detected drift, guarding against an oversized warm-up anchor, while a drift-active lower bound on the strength keeps the short-window solve well conditioned.
 On a 27-configuration factorial grid the calibrated window opens on detected drift, as the law predicts, and the method never diverges; the grid-default configuration transfers unchanged to an hourly electricity stream, and a reduced-range head transfers to BCI IV 2b. The core algebra, refresh chain, and regret bounds are formalized in Lean 4.
 \end{abstract}
@@ -77,7 +77,7 @@ The refresh equilibrium gives the exact lag $\Delta_k(s)$ and variance factor $\
 
 \item \textbf{A finite-dimensional spectral correction.}
 The separable-covariance deterministic equivalent gives the retention $q$, the renormalized anchor $\rho_{\mathrm{eff}}$, the variance functional $\Upsilon$, and the full excess risk with its $1/(1-\Upsilon)$ correction (Theorem~\ref{thm:rmt}).
-The formula matches Monte Carlo within $5\%$ on the $30$ full-rank operating points of the $45$-point grid, within $13\%$ at the method's own operating points, and within $0.6$--$11\%$ for the conflict increment; the rank-deficient boundary is stated explicitly.
+The formula matches Monte Carlo within $4.4\%$ across the $45$-point grid (including the rank-deficient spectrum), within $13\%$ at the method's own operating points, and within $9.5\%$ for the conflict increment; rank-deficient populations reduce exactly to their active subspace (Corollary~\ref{cor:rmt-active}).
 
 \item \textbf{A formalized core.}
 The algebraic core, the finite-cadence refresh chain, the OGD and Hedge regret bounds, and the coupled contraction are formalized in Lean 4: 67 declarations, no \texttt{sorry}, and only the three standard axioms (Appendix~\ref{app:lean}).
@@ -269,7 +269,7 @@ At the refresh equilibrium of Theorem~\ref{thm:cadence}, the cycle-averaged pred
 with $\Psi(s,r) = 1 - \frac{2s(1+s-s^2)(1-r)}{(1+a)(1-ar)}$ and $\Delta_k(s) = s\nu k\bigl(\frac{a}{1-a}+\frac12\bigr)$.
 At the runtime cadence $1 \ll k\omega$ need not hold---at the grid defaults $k\omega \in [0.005, 0.5]$---so the reduced target is justified by two monotone facts rather than by that limit.
 \emph{(i) Variance lower bound.}
-Since $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for every $r_k \in [0,1)$ (Theorem~\ref{thm:cadence}), the surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ with $c' = \sigma^2 d_{\mathrm{eff}}(\rho)$ lower-bounds the exact variance term at every cadence; Jensen's inequality gives $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$, so the runtime plug-in is itself a lower bound,
+Since $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for every $r_k \in [0,1)$ (Theorem~\ref{thm:cadence}), the surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ with $c' = \sigma^2 d_{\mathrm{eff}}(\rho)$ lower-bounds the exact variance term at every cadence; Jensen's inequality gives $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$, so the runtime plug-in is itself a lower bound (the gap is exactly the pull variance, $\sum_i(1-s_i)^2 - D(1-\bar s)^2 = D\operatorname{Var}(s)$, formalized in \texttt{Core.lean}),
 \[
   \hat c'_t \;=\; \sigma^2 D(1-\bar s_t)^2 \;\le\; \sigma^2\,d_{\mathrm{eff}}(\rho) \;\le\; \sigma^2 \sum_{i=1}^D \Psi(s_i,r_k).
 \]
@@ -337,7 +337,7 @@ The eigenvalues of $A + n\rho I$ lie in $[\,n\rho,\ n(\mu_{\max} + \rho)\,]$, wh
 
 \begin{theorem}[Spectral retention and the streaming risk]
 \label{thm:rmt}
-Let the feature vectors have independent sub-Gaussian entries with population spectral measure $H$ supported on $[\tau_{\min},\tau_{\max}]$, $\tau_{\min}>0$ (full-rank population covariance), and let $\zeta = D \omega$ be held fixed as $D \to\infty$ (proportional regime).
+Let the feature vectors have independent sub-Gaussian entries with population spectral measure $H$ supported on $[0,\tau_{\max}]$ whose nonzero part lies in $[\tau_{\min}^+,\tau_{\max}]$, $\tau_{\min}^+>0$ (a possibly rank-deficient population covariance), and let $\zeta = D \omega$ be held fixed as $D \to\infty$ (proportional regime).
 (i) The average data retention $q = 1 - \bar s$ is the unique solution in $(0,1)$ of
 \[
 \begin{aligned}
@@ -355,9 +355,9 @@ R_{\mathrm{pred}} \;\longrightarrow\; \frac{1}{1 - \Upsilon}\left[\sigma^2 \Upsi
 The oracle anchor recovers Part~(i), and the classical limit $\zeta \to 0$ recovers Proposition~\ref{prop:conflict}'s per-direction conflict bias $\mu_i(\rho/(\mu_i+\rho))^2\delta_i^2$. Part~(i) is therefore the variance component of the risk, while Part~(iii) is the full risk.
 \end{theorem}
 The convergence step is the separable-covariance deterministic equivalent \citep{silverstein1995,rubio2011,hachem2007}; the nearest prior analysis, the large-system exponentially windowed RLS of \citet{xiao2005}, has no anchor, pulls, refresh, or online calibration, and the ridge-risk line \citep{hastie2022} treats unweighted batches.
-The finite-window spreading is a single renormalization $\rho \mapsto \rho_{\mathrm{eff}} \ge \rho$: the formula matches simulation within $5\%$ on the $30$ full-rank fixed points of the $45$-point grid and the measured pairs within $13\%$.
+The finite-window spreading is a single renormalization $\rho \mapsto \rho_{\mathrm{eff}} \ge \rho$: the formula matches simulation within $4.4\%$ across the $45$-point fixed-point grid (including the rank-deficient spectrum) and the measured operating pairs within $13\%$.
 It is a correction to the analysis, not a term fed back into the runtime rule: Algorithm~\ref{alg:spar-pull} keeps the mean-field plug-in $\hat c'_t$, and Theorem~\ref{thm:rmt} quantifies what that forgoes as $\zeta$ grows.
-The full-rank hypothesis is essential: on rank-deficient spectra ($H(\{0\})>0$) the deterministic equivalent misses the null-space boundary layer and overestimates the out-of-sample conflict increment by up to $67\%$ at $\rho = 0.01$ (Appendix~\ref{app:protocol}).
+Rank-deficient populations are not a boundary: because the out-of-sample risk weights every coordinate by $\Sigma$, the null directions drop out and the deterministic equivalent restricts exactly to $\operatorname{range}(\Sigma)$, with the aspect ratio scaled by the rank fraction (Corollary~\ref{cor:rmt-active}).
 Part~(ii) supplies the analytic coupling product used in Theorem~\ref{thm:closedloop}: in logarithmic coordinates the product is at most $\tfrac{4}{3(2-\omega)}\,\bar s < 1$ for all $\omega \in (0, 2/3)$ (Appendix~\ref{app:protocol}).
 
 The per-direction variant inherits the Davis--Kahan eigenvector fragility \citep{davis1970,wedin1972}: it degrades on flat and rotating spectra (Section~\ref{sec:limitations}), while the scalar method is invariant to basis rotation (Proposition~\ref{prop:invariance}, Appendix~\ref{app:proofs}).
@@ -391,8 +391,8 @@ A transient sweep (Appendix Table~\ref{tab:transient}) shows that the adaptive s
 Appendix Figure~\ref{fig:cliffapp} sweeps the window and locates the sharp degradation at short windows, confirming that the calibrated method stays on the stable side.
 
 \textbf{Finite-$D$ correction.}
-The deterministic-equivalent formula matches the Monte Carlo stationary risk within $5\%$ on the $30$ full-rank operating points of the $45$-point grid (Appendix~\ref{app:rmt-validation}), within $13\%$ at the method's own operating points, and the conflict increment within $0.6$--$11\%$ on full-rank spectra.
-The rank-deficient corner lies outside the theorem's hypotheses; Section~\ref{sec:limitations} states the measured cost.
+The deterministic-equivalent formula matches the Monte Carlo stationary risk within $4.4\%$ across all $45$ operating points of the grid, including the rank-deficient spectrum (Appendix~\ref{app:rmt-validation}), within $13\%$ at the method's own operating points, and the conflict increment within $9.5\%$.
+Rank-deficient spectra reduce exactly to the active subspace (Corollary~\ref{cor:rmt-active}); Section~\ref{sec:limitations} records the conditions.
 
 \subsection{Fixed-protocol comparison}
 Table~\ref{tab:grid} reports the fixed-protocol comparison.
@@ -503,7 +503,7 @@ The empirical claims are about the calibrated method on the streams studied, not
 dimension & assumption or protocol & consequence outside it \\
 \midrule
 design model & Theorems~\ref{thm:cadence}--\ref{thm:window} use the mean-field accumulator; Theorem~\ref{thm:rmt} retains the random design & the mean-field target is a control law at $\zeta \le 6.4$ (drift phase); the finite-$D$ correction is the relevant statement there \\
-spectrum & Theorem~\ref{thm:rmt} assumes full rank, $\tau_{\min}>0$ & rank-deficient conflict error reaches $67\%$ at $\rho=0.01$; reported as a boundary, not covered \\
+spectrum & Theorem~\ref{thm:rmt} assumes the nonzero part is bounded away from zero, $\tau_{\min}^+>0$; rank-deficient spectra reduce exactly to $\operatorname{range}(\Sigma)$ (Corollary~\ref{cor:rmt-active}) & null directions drop out of the prediction risk, so the deterministic equivalent holds once the diagnostic spectrum matches the generator's active directions \\
 contraction & Theorem~\ref{thm:closedloop} is local at an interior fixed point with the clip inactive & the global statement keeps the measured-product hypothesis and the gate \\
 moving targets & fixed-protocol grid, 27 configurations & unanchored information-form leaky RLS wins $12/18$ moving-target configurations; SPAR wins all $9$ static-target covariance-rotation configurations \\
 strength rule & onset guard; average effect measured by ablation & freezing it lowers mean MSE by $2.2\%$; its value is the transient guard, not a continuous tracking gain \\
@@ -518,13 +518,12 @@ Lean artifact & algebraic core, refresh chain, regret bounds, coupled contractio
 
 \section{Conclusion}
 The finite-cadence refresh equilibrium is the central object: it gives the tracking lag and variance reduction of an anchored stream in closed form, and the optimal forgetting window follows by minimizing the cycle-averaged risk.
-The random-matrix correction extends the law to finite dimension, where the anchor is renormalized by the finite window; the correction is accurate on full-rank spectra and has a documented boundary on rank-deficient ones.
+The random-matrix correction extends the law to finite dimension, where the anchor is renormalized by the finite window; the correction is accurate on full-rank and rank-deficient spectra, the latter reducing exactly to the active subspace.
 The Lean artifact formalizes the algebraic core, the refresh chain, the regret bounds, and the coupled contraction.
 
-Two questions remain open.
+One question remains open.
 The closed-form stationary law for the coupled estimators is not known; the moment recursion is the current analytic handle.
-The rank-deficient boundary needs a separate deterministic equivalent that resolves the null-space layer.
-Neither question affects the calibrated method on the full-rank streams studied here.
+It does not affect the calibrated method on the streams studied here.
 
 \bibliographystyle{tmlr}
 \bibliography{references}

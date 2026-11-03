@@ -17,8 +17,8 @@ streams. It derives a finite-cadence refresh equilibrium of the anchored
 recursion: a closed-form tracking lag, an explicit variance-reduction factor,
 and, by minimizing the cycle-averaged risk, a closed-form optimal forgetting
 window together with a plug-in anchor strength. A random-matrix deterministic
-equivalent extends both laws to finite dimension and delimits a rank-deficient
-boundary. The resulting method, SPAR, calibrates its window and strength online
+equivalent extends both laws to finite dimension, and rank-deficient populations
+reduce exactly to their active subspace. The resulting method, SPAR, calibrates its window and strength online
 from streaming residuals and is evaluated on a factorial grid of synthetic
 streams, on an hourly electricity stream, and on BCI IV 2a/2b, with the
 algebraic core, the refresh chain, and the regret bounds formalized in Lean 4.

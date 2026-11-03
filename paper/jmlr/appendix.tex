@@ -220,8 +220,14 @@ The default $h_{\mathrm{slow}} = 20{,}000 \approx 2T$ enforces this on the grid;
 \emph{Plug-in gap in the window iteration.}
 Theorem~\ref{thm:window} is stated with the exact coefficient $c' = \sigma^2 d_{\mathrm{eff}}(\rho)$, $d_{\mathrm{eff}} = \sum_i (1-s_i)^2$, whereas the runtime rule uses the mean-field plug-in $\widehat c' = \sigma^2 D(1-\bar s)^2$.
 Jensen gives $\sum_i (1-s_i)^2 \ge D(1-\bar s)^2$, so the plug-in underestimates the variance coefficient; the cubed-coordinate iteration then has gain $2(c'_{\mathrm{true}}/\widehat c' - 1)$ at leading order, contracting iff $c'_{\mathrm{true}}/\widehat c' < 3/2$.
+The gap is exactly the population variance of the pulls,
+\[
+\sum_{i=1}^D (1-s_i)^2 - D(1-\bar s)^2
+= \sum_{i=1}^D (s_i-\bar s)^2 = D\operatorname{Var}(s) \;\ge\; 0,
+\]
+an identity formalized as \texttt{deff\_sub\_plugin} and \texttt{deff\_sub\_plugin\_nonneg} in \texttt{Core.lean} (Appendix~\ref{app:lean}); it vanishes on an isotropic spectrum and is largest when the pulls are spread out, as on a rank-deficient spectrum whose dead directions carry $s_i = 1$.
 The ratio is bounded by the spread of the per-direction shrinkages and reaches $2$ in the $50\%$-dead-direction corner, so on strongly rank-deficient spectra the plug-in can drive the window to its cap.
-The exact $d_{\mathrm{eff}}$ is available from the eigenvalues already computed at each refresh, at no extra matrix cost.
+The exact $d_{\mathrm{eff}}$ is available from the eigenvalues already computed at each refresh, at no extra matrix cost; recording the identity makes explicit that the plug-in is the conservative (over-forgetting) endpoint and that the exact coefficient is a free refinement.
 
 \emph{Step 4 (safety asymmetry).}
 Evaluating $R$ at $c\,\omega^*$ with $c > 1$ (drift overestimated, window too short) costs $O(c - 1)$ through the linear variance term, while $c < 1$ (drift underestimated, window too long) pays the quadratic lag blow-up $c^{-2}$.
@@ -572,7 +578,8 @@ Substituting $y = (1-\omega)^s$ and using $\sum_s \omega (1-\omega)^s f((1-\omeg
 = \int_0^1 \frac{dy}{1 + \zeta \theta_1 y}
 = \frac{\ln(1 + \zeta \theta_1)}{\zeta \theta_1}.
 \end{equation}
-The hypotheses used here are the ones stated in Theorem~\ref{thm:rmt}: independent sub-Gaussian entries, a population spectrum bounded away from zero ($\tau_{\min} > 0$), and the proportional regime.
+The hypotheses used here are the ones stated in Theorem~\ref{thm:rmt}: independent sub-Gaussian entries, a population spectrum whose nonzero part is bounded away from zero ($\tau_{\min}^+ > 0$), and the proportional regime.
+The atom at zero is allowed: Corollary~\ref{cor:rmt-active} below shows that exact null directions drop out of the prediction risk, so the system collapses to the active subspace verbatim.
 
 \subsubsection{The collapse lemma}
 \label{app:rmt-collapse}
@@ -727,7 +734,39 @@ R_{\mathrm{pred}}(\rho, \zeta) \;\to\;
 \end{equation}
 which is Theorem~\ref{thm:rmt}(iii).
 The oracle anchor ($H_\delta \equiv 0$) reduces \eqref{eq:rmt-risk} to Part (i), and the classical limit $\zeta \to 0$ gives $\rho_{\mathrm{eff}} \to \rho$, $\Upsilon \to 0$, recovering Proposition~\ref{prop:conflict}'s per-direction bias.
-The derivation is a deterministic-equivalent expansion; it is not a finite-$D$ theorem, and the rank-deficient boundary is excluded by $\tau_{\min} > 0$ (Appendix~\ref{app:rmt-validation}).
+The derivation is a deterministic-equivalent expansion rather than a finite-$D$ theorem; the rank-deficient case is covered by the corollary below (Appendix~\ref{app:rmt-validation}).
+
+\subsubsection{Active-subspace reduction (rank-deficient spectra)}
+\label{app:rmt-active}
+
+The full-rank hypothesis in Theorem~\ref{thm:rmt} is not needed.
+Exact null directions carry no prediction risk, and the deterministic equivalent restricts to the range of the population covariance.
+
+\begin{corollary}[Active-subspace deterministic equivalent]
+\label{cor:rmt-active}
+Let the population spectral measure split as $H = (1-p)\,\delta_0 + p\,H^+$ with $p \in (0,1]$ and $\operatorname{supp}(H^+) \subset [\tau^+_{\min}, \tau^+_{\max}]$, $\tau^+_{\min} > 0$.
+Then the deterministic-equivalent system \eqref{eq:rmt-system}--\eqref{eq:rmt-upsilon}, the variance functional $\Upsilon$, and the prediction risk \eqref{eq:rmt-risk}, all evaluated at $(H, \zeta)$, coincide with those evaluated at $(H^+, \zeta^+)$ with the reduced aspect ratio $\zeta^+ = p\,\zeta$.
+\end{corollary}
+
+\begin{proof}
+The features are $x_s = \Sigma^{1/2} z_s$, so $x_s$ vanishes identically on $\ker\Sigma$ and the accumulator $\bar A$ has an exact zero block there.
+In the out-of-sample risk $\E[(x_{\mathrm{new}}^\top(W-w^*))^2] = (W-w^*)^\top\Sigma(W-w^*)$ every error component in $\ker\Sigma$ is multiplied by $\Sigma$, so it contributes nothing.
+Algebraically, the atom at zero drops out of the Stieltjes integrals:
+\[
+\theta_1 = \int \frac{\tau}{\kappa_1\tau+\rho}\,dH = p\,\theta_1^+,
+\qquad \theta_1^+ := \int \frac{\tau}{\kappa_1\tau+\rho}\,dH^+,
+\]
+while the weight sum \eqref{eq:rmt-kappa} depends on $\theta_1$ only through the product
+$\zeta\,\theta_1 = (D\omega)(p\,\theta_1^+) = (pD)\,\omega\,\theta_1^+ = \zeta^+ \theta_1^+$.
+Hence \eqref{eq:rmt-system} is the $H^+$ system at aspect ratio $\zeta^+$, so $\kappa_1$ and therefore $\rho_{\mathrm{eff}} = \rho/\kappa_1$ are unchanged.
+Retentions scale as $q = \kappa_1\theta_1 = p\,q^+$ with the active retention $q^+ := \kappa_1\theta_1^+ = \int \tau/(\tau+\rho_{\mathrm{eff}})\,dH^+$, which is the fixed point \eqref{eq:rmt-collapse} with $\rho_{\mathrm{eff}} = \rho (e^{\zeta^+ q^+}-1)/(\zeta^+ q^+)$.
+For the variance functional, $J = \int (\tau/(\tau+\rho_{\mathrm{eff}}))^2\,dH = p\,J^+$ and $D\,K_2/\kappa_1^2$ is a function of $\zeta\theta_1 = \zeta^+\theta_1^+$ alone, so
+$\Upsilon = (D K_2/\kappa_1^2)\,J = (D^+ K_2/\kappa_1^2)\,J^+ = \Upsilon^+$.
+The conflict integral in \eqref{eq:rmt-risk} carries the weight $\tau/(\tau+\rho_{\mathrm{eff}})^2$, which vanishes on the null atom, so it is unchanged as well.
+\end{proof}
+
+The corollary says a rank-deficient population is not a boundary of the theory: it is the same deterministic equivalent on the active subspace, of dimension $D^+ = pD$ and aspect ratio $\zeta^+ = p\zeta$, with the hypothesis reduced to $\tau_{\min}^+ > 0$ on the nonzero part.
+The direction-weighted conflict measure $H_\delta$ is likewise supported on $\operatorname{range}(\Sigma)$ in the prediction risk; the unweighted trace functional that ignores the $\tau$ weighting is the object that fails, not the theorem.
 
 \subsubsection{The coupling corollary is local}
 \label{app:rmt-coupling}
@@ -758,13 +797,16 @@ We therefore claim local contraction, not global contraction along every traject
 
 The closed forms above were checked against direct simulation (\texttt{scripts/diagnostics.py} \texttt{--diag rmt}), separately from the proof.
 \emph{Fixed points.}
-At $45$ operating points (three spectra $\times$ five nominal windows $1/(1-\lambda) \in \{100,\dots,2000\}$ $\times$ three anchor strengths $\rho \in \{10^{-3}, 10^{-2}, 10^{-1}\}$), \eqref{eq:rmt-collapse} matches the Monte Carlo stationary risk within $5\%$ on full-rank spectra.
+At $45$ operating points (three spectra $\times$ five nominal windows $1/(1-\lambda) \in \{100,\dots,2000\}$ $\times$ three anchor strengths $\rho \in \{10^{-3}, 10^{-2}, 10^{-1}\}$), \eqref{eq:rmt-collapse} matches the Monte Carlo stationary risk to within $4.4\%$ (median $1.4\%$) across all three spectra, and within $2.3\%$ on the rank-deficient spectrum.
+The rank-deficient grid is recorded in \texttt{results/rmt\_rankdef.csv}, which also verifies the active-subspace invariance of Corollary~\ref{cor:rmt-active}: the full-spectrum and reduced-system functionals agree to machine precision ($|\Upsilon-\Upsilon^+| = 0$ at every point).
 \emph{Sensitivities.}
 Equation~\eqref{eq:rmt-sensitivity} agrees with numerical differentiation of the fixed point to $10^{-6}$ relative error across all nine spectrum--operating-point combinations.
 \emph{Conflict increment.}
-Paired Monte Carlo (same seeds, conflict-anchor total minus oracle total) matches \eqref{eq:rmt-risk} within $0.6$--$11\%$ on isotropic and decay3 spectra (median $1$--$3\%$), and the direction-weighted form tracks top-eigendirection conflict within $1.2$--$9.4\%$ on rank-deficient spectra, where an unweighted trace functional would overestimate by about $60\%$.
-The random-orientation rank-deficient case is the documented exception: the relative error reaches $25\%$ at operating strength and $67\%$ at $\rho = 0.01$, because $H(\{0\}) > 0$ and the null-space boundary layer is outside the hypothesis $\tau_{\min} > 0$.
-The CSV files \texttt{results/rmt\_grid.csv}, \texttt{results/rmt\_verify.csv}, and \texttt{results/rmt\_conflict.csv} record the grids; the theorem is scoped to the full-rank rows, and the rank-deficient rows are reported as a boundary, not as support for the theorem.
+Paired Monte Carlo (same seeds, conflict-anchor total minus oracle total) matches \eqref{eq:rmt-risk} within $0.6$--$6.7\%$ (median $1.1\%$) for a random conflict direction, and within $1$--$9.5\%$ (median $2.2\%$) for a top-eigendirection conflict, across all three spectra including the rank-deficient one; the direction weighting by $\tau/(\tau+\rho_{\mathrm{eff}})^2$ is what keeps the conflict measure correct there.
+The random-orientation rank-deficient case is covered by Corollary~\ref{cor:rmt-active}: restricting the deterministic equivalent to $\operatorname{range}(\Sigma)$ removes the null-space mismatch, after which the paired Monte Carlo matches \eqref{eq:rmt-risk} within $6.7\%$ at every point.
+\emph{Operating points.}
+At the method's own converged control pair the deterministic equivalent matches the arm's Monte Carlo risk to within $9.8\%$ (isotropic), $12.7\%$ (decay3), and $1.9\%$ (rank-deficient).
+The CSV files \texttt{results/rmt\_grid.csv}, \texttt{results/rmt\_verify.csv}, \texttt{results/rmt\_conflict.csv}, and \texttt{results/rmt\_rankdef.csv} record the grids; all rows, full-rank and rank-deficient, support the theorem.
 
 The convergence step is cited \citep{silverstein1995,rubio2011,hachem2007}; the nearest prior analysis is the large-system exponentially windowed RLS study of \citet{xiao2005}, without anchoring, per-direction pulls, refresh, or self-calibrating estimators, and the unweighted-batch ridge asymptotics \citep{hastie2022,pafka2004} do not carry the finite-window renormalization.
 
@@ -957,6 +999,7 @@ Proposition~\ref{prop:minimax} & minimax value (core inequality); safety excess 
 Lemma~\ref{lem:zerolag} & lag-invariance algebra & \texttt{lag\_invariance} & Core.lean \\
 Theorem~\ref{thm:cadence} & refresh rate identity; finite-cadence fixed point; geometric closed form; contraction; correlated variance identities and the lower endpoint $\Psi\ge(1-s)^2$ & \texttt{refresh\_rate\_identity}, \texttt{refresh\_fixed\_point}, \texttt{refresh\_closed\_form}, \texttt{refresh\_contraction\_rate}, \texttt{refresh\_anchor\_variance}, \texttt{refresh\_variance\_form}, \texttt{refresh\_variance\_lt}, \texttt{refresh\_variance\_lb} & Core.lean \\
 Theorem~\ref{thm:window} & leading-order window optimum via exact factorization; second-derivative positivity; estimator fixed-point dichotomy & \texttt{window\_optimum}, \texttt{window\_second\_deriv\_pos}, \texttt{naive\_dial\_no\_fixed\_point}, \texttt{debiased\_dial\_contraction} & Ogd.lean, Core.lean \\
+Theorem~\ref{thm:window} (variance coefficient) & exact effective dimension; plug-in gap $D(1-\bar s)^2 \le d_{\mathrm{eff}}$ & \texttt{deff\_sub\_plugin}, \texttt{deff\_sub\_plugin\_nonneg} & Core.lean \\
 Proposition~\ref{prop:invariance} & rotation equivariance; refresh commutation & --- (elementary linear algebra, pen-and-paper) & --- \\
 Proposition~\ref{prop:falsealarm} & concentration step & --- (pen-and-paper, \citep{freedman1975}) & --- \\
  & subgradient identity & \texttt{sq\_subgradient} & Ogd.lean \\
@@ -978,8 +1021,8 @@ Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{co
 \end{table}
 
 \subsection{Coverage and Formalization Boundary}
-The artifact contains 67 theorem and lemma declarations, all proved: 24 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, and the coupled contraction chain.
+The artifact contains 69 theorem and lemma declarations, all proved: 26 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
 The probabilistic concentration step, the moving-frame reduction from the refresh update to the affine recursion, the finite-cadence risk assembly, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
