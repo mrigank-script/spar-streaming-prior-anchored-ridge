@@ -120,6 +120,37 @@ Projected gradient and Hedge arguments are standard \citep{zinkevich2003}; the c
 The finite-\(D\) correction uses the separable-covariance deterministic equivalent \citep{silverstein1995,rubio2011,hachem2007}.
 The nearest prior analysis is the large-system exponentially windowed RLS study of \citet{xiao2005}, which has no anchor, per-direction pull, refresh, or online calibration; the unweighted-batch ridge asymptotics \citep{hastie2022,pafka2004} do not carry the finite-window renormalization.
 
+\emph{What is new.}
+Three quantitative deltas separate this work from the nearest analyses.
+(i) Against the exponentially windowed RLS of \citet{xiao2005}, whose large-system limit has no anchor, per-direction pull, refresh, or online calibration, the finite-cadence refresh equilibrium adds the closed-form window law $\omega^*=(4\nu^2_\Sigma/c')^{1/3}$ and couples pull and refresh through $\beta_i=1-s_i$; the nearest prior has neither.
+(ii) Against the unweighted-batch ridge asymptotics \citep{hastie2022,pafka2004,silverstein1995,rubio2011,hachem2007}, which are the $\zeta\to0$ limit, the streaming deterministic equivalent carries the finite-window renormalization $\rho_{\mathrm{eff}}=\rho(e^{\zeta q}-1)/(\zeta q)$ and the $1/(1-\Upsilon)$ variance amplification; on full-rank spectra it matches simulation to $4.4\%$ across the whole grid (Section~\ref{sec:experiments}).
+(iii) Against single-scalar interpolation (WiSE-FT) and scalar-$\lambda$ forgetting, the anchor strength is per direction, $\rho/(\mu_i+\rho)$, and it also sets the refresh rate; the threshold is calibrated online from the measured conflict, and the coupling product stays below one at the operating points.
+Table~\ref{tab:related} summarizes the coverage.
+
+\begin{table}[t]
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\caption{What is new relative to the nearest lines of work. ``DE'' is the finite-window deterministic-equivalent correction; ``Lean'' the machine-checked core.}
+\label{tab:related}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}p{1.72in}cccccc@{}}
+\toprule
+family & anchor & per-dir.\ pull & refresh & online window/strength & finite-window DE & Lean \\
+\midrule
+leaky / EW-RLS \citep{sayed2008,xiao2005} & -- & -- & -- & -- & $\zeta\to0$ & -- \\
+VFF-RLS \citep{fortescue1981,paleologu2008} & -- & -- & -- & window & -- & -- \\
+directional forgetting \citep{kulhavy1984,cao2000,lai2024sift} & -- & subspace & -- & -- & -- & -- \\
+AROW \citep{crammer2009arow} & confidence & per-feature & -- & -- & -- & -- \\
+Kalman / state space \citep{kalman1960,sayed1994} & process & -- & -- & $q$ fixed & -- & -- \\
+WiSE-FT \citep{wortsman2022wiseft} & frozen model & -- & -- & -- & -- & -- \\
+ACIL \citep{zhuang2022acil} & frozen features & -- & stationary & -- & -- & -- \\
+batch-ridge DE \citep{silverstein1995,rubio2011,hachem2007} & -- & -- & -- & -- & unweighted & -- \\
+\textbf{SPAR (this work)} & prior $G$ & $s_i=\frac{\rho}{\mu_i+\rho}$ & $\beta_i=1-s_i$ & both & $\rho_{\mathrm{eff}}$ & yes \\
+\bottomrule
+\end{tabular}}
+\end{table}
+
 \section{Method}
 We call the resulting solver family SPAR (Streaming Prior-Anchored Ridge), the streaming instantiation of the Anchored Analytic Learning (AAL) framework.
 
