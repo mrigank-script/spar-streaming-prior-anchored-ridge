@@ -332,7 +332,7 @@ At any window and for any data, $\kappa(A + n\rho I) \le 1 + \mu_{\max}/\rho$, i
 The anchored solve never iterates an inverse, so it needs no implementation care at short windows; Section~\ref{sec:experiments} measures what happens when the standard covariance recursion does.
 \end{proposition}
 \begin{proof}
-The eigenvalues of $A + n\rho I$ lie in $[\,n\rho,\ n(\mu_{\max} + \rho)\,]$, whose ratio is $1 + \mu_{\max}/\rho$.
+The eigenvalues of $A + n\rho I$ lie in $[\,n\rho,\ n(\mu_{\max} + \rho)\,]$, whose ratio is $1 + \mu_{\max}/\rho$ (the ratio bound and the pull interval are formalized as \texttt{windup\_ratio\_le} and \texttt{pull\_weight\_bounds} in \texttt{Core.lean}).
 \end{proof}
 
 \begin{theorem}[Spectral retention and the streaming risk]

@@ -1028,6 +1028,7 @@ The rotated accumulators are $A' = QAQ^\top$ and $B' = QB$, and $QAQ^\top + n\rh
 $W' = (QAQ^\top + n\rho I)^{-1}(QB + n\rho\,QG) = Q\,(A + n\rho I)^{-1}(B + n\rho G) = QW$.
 Predictions are inner products of rotated vectors against rotated solutions.
 The eigenvalues of $\bar A' = Q\bar A Q^\top$ coincide with those of $\bar A$, so the pulls $s_i = \rho/(\mu_i + \rho)$ are unchanged; with the rotated eigenbasis $U' = QU$ the refresh step maps to the rotated refresh, so the equilibrium of Theorem~\ref{thm:cadence} is unchanged as well.
+The trace and determinant invariance of the conjugated accumulator are formalized as \texttt{conj\_trace} and \texttt{conj\_det} in \texttt{Core.lean}.
 \end{proof}
 Two consequences: the scalar method's per-step solve never needs an eigenbasis (it uses only $A$, $B$, $G$), so a covariance rotation mid-stream degrades it through the conditioning of $A + n\rho I$, which Proposition~\ref{prop:windup} bounds, and through the frozen anchor's misalignment until the next refresh; and the per-direction method's refresh aligns to the current dominant directions only at each cycle, so between cycles it applies its pulls in a stale basis, at the Davis--Kahan-bounded cost above. The scalar method wins all nine covariance-rotation configurations while the per-direction method is the fragile one (Sections~\ref{sec:experiments} and~\ref{sec:limitations}).
 
@@ -1139,7 +1140,7 @@ Theorem~\ref{thm:cadence} & refresh rate identity; finite-cadence fixed point; g
 Theorem~\ref{thm:cadence} (moving frame) & moving-frame reduction to the affine recursion; midpoint cycle assembly; Gauss sum & \texttt{moving\_frame\_reduction}, \texttt{cycle\_midpoint\_average}, \texttt{cycle\_lag\_assembly}, \texttt{sum\_range\_half} & Core.lean \\
 Theorem~\ref{thm:window} & leading-order window optimum via exact factorization; second-derivative positivity; estimator fixed-point dichotomy & \texttt{window\_optimum}, \texttt{window\_second\_deriv\_pos}, \texttt{naive\_dial\_no\_fixed\_point}, \texttt{debiased\_dial\_contraction} & Ogd.lean, Core.lean \\
 Theorem~\ref{thm:window} (variance coefficient) & exact effective dimension; plug-in gap $D(1-\bar s)^2 \le d_{\mathrm{eff}}$ & \texttt{deff\_sub\_plugin}, \texttt{deff\_sub\_plugin\_nonneg} & Core.lean \\
-Proposition~\ref{prop:invariance} & rotation equivariance; refresh commutation & --- (elementary linear algebra, pen-and-paper) & --- \\
+Proposition~\ref{prop:invariance} & rotation equivariance; refresh commutation & \texttt{conj\_trace}, \texttt{conj\_det} (spectral invariance under orthogonal conjugation) & Core.lean \\
 Proposition~\ref{prop:falsealarm} & concentration step & --- (pen-and-paper, \citep{freedman1975}) & --- \\
  & subgradient identity & \texttt{sq\_subgradient} & Ogd.lean \\
  & box-projection contraction (1-dim) & \texttt{projBox\_dist\_sq\_le} & Ogd.lean \\
@@ -1148,7 +1149,7 @@ Proposition~\ref{prop:ocowrap}(i) & Zinkevich step (adaptive losses) & \texttt{o
 Proposition~\ref{prop:ocowrap}(ii) & quadratic exponential bound & \texttt{exp\_neg\_le\_one\_sub\_add\_sq} & Hedge.lean \\
  & potential step, ratio, and product bounds & \texttt{Zfun\_step}, \texttt{Zfun\_step\_bound}, \texttt{Zfun\_prod\_bound} & Hedge.lean \\
  & Hedge regret & \texttt{hedge\_regret} & Hedge.lean \\
-Proposition~\ref{prop:windup} & eigenvalue interval bound & --- (one line, pen-and-paper) & --- \\
+Proposition~\ref{prop:windup} & eigenvalue interval bound; pull weights & \texttt{windup\_ratio\_le}, \texttt{pull\_weight\_bounds} & Core.lean \\
 Theorem~\ref{thm:closedloop} & joint $2\times2$ contraction; geometric decay; tracking radius; drift-mode, one-way, and pinned-estimator (free-rate) specializations & \texttt{joint\_step}, \texttt{joint\_geometric}, \texttt{joint\_tracking}, \texttt{joint\_bounds}, \texttt{joint\_weight\_lo}, \texttt{joint\_weight\_hi}, \texttt{joint\_rate\_lt\_one}, \texttt{joint\_geometric\_drift\_mode}, \texttt{joint\_geometric\_triangular}, \texttt{joint\_geometric\_pinned} & Coupled.lean \\
 Propositions~\ref{prop:ergodic},~\ref{prop:fluct} & invariant measure; second-moment (Lyapunov) bound & --- (pen-and-paper, \citealp{meyn2009}) & --- \\
 \midrule
@@ -1160,8 +1161,8 @@ Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{co
 \end{table}
 
 \subsection{Coverage and formalization boundary}
-The artifact contains 73 theorem and lemma declarations, all proved: 30 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
+The artifact contains 77 theorem and lemma declarations, all proved: 34 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
 The probabilistic concentration step, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
