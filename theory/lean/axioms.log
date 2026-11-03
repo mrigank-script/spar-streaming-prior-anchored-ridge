@@ -27,6 +27,7 @@
 'de_log_identity' depends on axioms: [propext, Classical.choice, Quot.sound]
 'de_collapse' depends on axioms: [propext, Classical.choice, Quot.sound]
 'smooth_dim_lipschitz' depends on axioms: [propext, Classical.choice, Quot.sound]
+'weighted_cross_le' depends on axioms: [propext, Classical.choice, Quot.sound]
 'naive_dial_no_fixed_point' depends on axioms: [propext, Classical.choice, Quot.sound]
 'debiased_dial_contraction' depends on axioms: [propext, Classical.choice, Quot.sound]
 'window_second_deriv_pos' depends on axioms: [propext, Classical.choice, Quot.sound]

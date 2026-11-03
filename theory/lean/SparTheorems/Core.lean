@@ -72,6 +72,9 @@ elementary real analysis over ℝ; no probability is mechanized.
 
 ### Smooth Effective Dimension
 * `smooth_dim_lipschitz`      : μ/(μ+ρ) is 1/ρ-Lipschitz on μ ≥ 0
+
+### Weighted Cross-Covariance Bound
+* `weighted_cross_le`         : r|e_w e_r| ≤ V² for V = max(|e_w|, r|e_r|)
 -/
 
 /-! ## Pull Identity
@@ -760,3 +763,24 @@ theorem smooth_dim_lipschitz (μ μ' ρ : ℝ) (hμ : 0 ≤ μ) (hμ' : 0 ≤ μ
   field_simp
   nlinarith [abs_nonneg (μ - μ'), mul_nonneg hμ hμ', mul_nonneg hμ hρ.le,
     mul_nonneg hμ' hρ.le]
+
+/-! ## Weighted Cross-Covariance Bound
+
+The coupled contraction of Theorem `thm:closedloop` uses the weighted
+max-norm `V = max(|e_ω|, r|e_ρ|)`.  That same norm bounds the cross moment:
+`|e_ω| ≤ V` and `r|e_ρ| ≤ V` give `r|e_ω e_ρ| ≤ V²`, hence
+`E[e_ω e_ρ] ≤ E[V²]/r`, so the cross-quantity covariance is controlled by
+the scalar Lyapunov bound of part (iii), not left unasserted. -/
+
+/-- **Cross-covariance bound from the weighted max-norm**: if the window and
+strength errors satisfy `|e_ω| ≤ V` and `r|e_ρ| ≤ V`, then `r|e_ω e_ρ| ≤ V²`,
+so the cross moment is at most `V²/r`; with `E[V²] ≤ q_*/(1-γ)²` the
+stationary cross-covariance obeys `|E[e_ω e_ρ]| ≤ q_*/(r(1-γ)²)`. -/
+theorem weighted_cross_le (a b r V : ℝ) (hr : 0 < r) (ha : |a| ≤ V)
+    (hb : r * |b| ≤ V) :
+    r * |a * b| ≤ V * V := by
+  have hV : 0 ≤ V := le_trans (abs_nonneg a) ha
+  rw [abs_mul]
+  calc r * (|a| * |b|) = |a| * (r * |b|) := by ring
+    _ ≤ V * V :=
+      mul_le_mul ha hb (mul_nonneg hr.le (abs_nonneg b)) hV

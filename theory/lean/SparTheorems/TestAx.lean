@@ -33,6 +33,7 @@ import SparTheorems.Coupled
 #print axioms de_log_identity
 #print axioms de_collapse
 #print axioms smooth_dim_lipschitz
+#print axioms weighted_cross_le
 #print axioms naive_dial_no_fixed_point
 #print axioms debiased_dial_contraction
 #print axioms window_second_deriv_pos
