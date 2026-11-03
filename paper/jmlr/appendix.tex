@@ -610,6 +610,7 @@ Per population eigenvalue the retention and the pull sum to one, so $\kappa_1 \t
 Substituting \eqref{eq:rmt-kappa} gives $q = \ln(1 + \zeta \theta_1)/\zeta$, hence $e^{\zeta q} = 1 + \zeta \theta_1$.
 Therefore $\kappa_1 = \zeta q/(e^{\zeta q} - 1)$ and
 $\rho_{\mathrm{eff}} = \rho/\kappa_1 = \rho (e^{\zeta q} - 1)/(\zeta q)$.
+The collapse identities are formalized as \texttt{de\_log\_identity} and \texttt{de\_collapse} in \texttt{Core.lean}; the probabilistic convergence of the deterministic equivalent remains pen-and-paper.
 Existence and uniqueness in $(0,1)$: the right side of \eqref{eq:rmt-collapse} is continuous and strictly decreasing in $q$ (the growth factor $(e^{\zeta q}-1)/(\zeta q) \ge 1$ is strictly increasing, and each term $\tau/(\tau + \rho_{\mathrm{eff}})$ decreases in $\rho_{\mathrm{eff}}$), positive at $q \downarrow 0$ because $\tau_{\min} > 0$, and strictly below $1$ at $q = 1$.
 \end{proof}
 
@@ -1041,15 +1042,15 @@ Theorem~\ref{thm:closedloop} & joint $2\times2$ contraction; geometric decay; tr
 Propositions~\ref{prop:ergodic},~\ref{prop:fluct} & invariant measure; second-moment (Lyapunov) bound & --- (pen-and-paper, \citealp{meyn2009}) & --- \\
 \midrule
 Corollary~\ref{cor:mixed} & mixed-drift master law & --- (pen-and-paper, Appendix~\ref{app:proofs}) & --- \\
-Theorem~\ref{thm:rmt} & spectral retention and streaming risk & --- (deterministic equivalent, pen-and-paper, Appendix~\ref{app:proofs}) & --- \\
+Theorem~\ref{thm:rmt} & spectral retention and streaming risk; collapse/renormalization identities & \texttt{de\_log\_identity}, \texttt{de\_collapse} (convergence pen-and-paper) & Core.lean \\
 Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{cor:app-anchor-excites} & exact MAP; excitation/rank; anchoring removes the excitation requirement & --- (pen-and-paper, Appendix~\ref{app:support}) & --- \\
 \bottomrule
 \end{tabular}}
 \end{table}
 
 \subsection{Coverage and Formalization Boundary}
-The artifact contains 79 theorem and lemma declarations, all proved: 36 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
+The artifact contains 81 theorem and lemma declarations, all proved: 38 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, the deterministic-equivalent collapse, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
 The probabilistic concentration step, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
