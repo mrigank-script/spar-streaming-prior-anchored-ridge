@@ -149,6 +149,7 @@ The revision checks added for the theory and robustness sections:
 py scripts/moving_targets.py          # -> results/moving_targets.csv
 py scripts/finite_d_conc.py           # -> results/finite_d_conc.csv
 py scripts/sustained_drift.py         # -> results/sustained_drift.csv
+py scripts/dead_direction.py          # -> results/dead_direction.csv
 py scripts/stationary_fixed_point.py  # coupled fixed-point contraction (prints a check)
 ```
 

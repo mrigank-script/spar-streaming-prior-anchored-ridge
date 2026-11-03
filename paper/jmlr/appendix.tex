@@ -244,7 +244,7 @@ The gap is exactly the population variance of the pulls,
 = \sum_{i=1}^D (s_i-\bar s)^2 = D\operatorname{Var}(s) \;\ge\; 0,
 \]
 an identity formalized as \texttt{deff\_sub\_plugin} and \texttt{deff\_sub\_plugin\_nonneg} in \texttt{Core.lean} (Appendix~\ref{app:lean}); it vanishes on an isotropic spectrum and is largest when the pulls are spread out, as on a rank-deficient spectrum whose dead directions carry $s_i = 1$.
-The ratio is bounded by the spread of the per-direction shrinkages and reaches $2$ in the $50\%$-dead-direction corner, so on strongly rank-deficient spectra the plug-in can drive the window to its cap.
+The ratio $c'/c'_{\mathrm{plug\!-\!in}}$ equals $1/(1-p)$ on an isotropic alive block with a dead fraction $p$, so the leading cubed-window gain $2(c'/c'_{\mathrm{plug\!-\!in}}-1)$ is $2p/(1-p)$: it is below one up to $p=1/3$ and reaches $2$ at $p=1/2$, $6$ at $p=3/4$, and $17.7$ at $p=0.9$. Simulating the cubed-window iteration on a $50\%$-dead spectrum, the plug-in coefficient drives the window to its cap while the exact $d_{\mathrm{eff}}$ holds it at the optimum $0.02$ (\texttt{scripts/dead\_direction.py}; \texttt{results/dead\_direction.csv}).
 The exact $d_{\mathrm{eff}}$ is available from the eigenvalues already computed at each refresh, at no extra matrix cost; recording the identity makes explicit that the plug-in is the conservative (over-forgetting) endpoint and that the exact coefficient is a free refinement.
 
 \emph{Step 4 (safety asymmetry).}
