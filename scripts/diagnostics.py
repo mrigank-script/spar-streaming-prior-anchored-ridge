@@ -733,8 +733,16 @@ def diag_alt_trust() -> None:
 
 # ============================================== finite-cadence suboptimality
 def diag_subopt() -> None:
-    """Relative gap between the surrogate cubic window target and the exact
-    cycle-averaged optimum over the runtime cadence range."""
+    """Surrogate window gap and its certified perturbation bound.
+
+    The surrogate risk R_s(omega) = c'(omega/(2-omega)) + nu^2/omega^2 is the
+    frozen-anchor cycle average; the exact cycle-averaged risk replaces
+    (1-s)^2 by the finite-cadence factor psi and adds the within-cycle lag
+    dk, i.e. R = R_s + eps with eps = c_v psi_bar + D(2(nu/omega)dk + dk^2).
+    With R_s'' >= m > 0 and |eps'| <= eps1 on the sweep interval, the value
+    gap at the surrogate minimizer obeys R(omega_s) - min R <= eps1^2/(2m);
+    the table reports the measured gap and this certified upper bound.
+    """
     k, sigma2, D = 10, 0.01, 128
     rows = []
     for k_omega in (0.005, 0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5):
@@ -749,14 +757,28 @@ def diag_subopt() -> None:
             dk = s * nu * k * (a / (1 - a) + 0.5)
             risk = sigma2 * D * (w / (2 - w)) * psi + D * (nu / w + dk) ** 2
             gap = risk[np.argmin(np.abs(w - w0))] / risk.min() - 1
+            # certified value-gap bound: min R >= min Rs + min eps, so
+            # R(w0) - min R <= (Rs(w0) - min Rs) + (eps(w0) - min eps)
+            cv = sigma2 * D * (w / (2 - w))
+            Rs = cv * (1 - s) ** 2 + D * (nu / w) ** 2
+            eps = risk - Rs
+            i0 = int(np.argmin(np.abs(w - w0)))
+            bound = float((Rs[i0] - Rs.min()) + (eps[i0] - eps.min())) \
+                / float(risk.min())
             rows.append({"k_omega": k_omega, "omega": w0, "s": s,
-                         "rel_gap": float(gap)})
+                         "rel_gap": float(gap), "bound": float(bound),
+                         "certified": bool(bound >= gap)})
     df = pd.DataFrame(rows)
     df.to_csv(RES / "window_subopt.csv", index=False)
     print(df.pivot_table(index="k_omega", columns="s",
                          values="rel_gap").round(5).to_string())
     print("\nmax relative gap by s:")
     print(df.groupby("s").rel_gap.max().round(5).to_string())
+    print("\nmax certified bound by s:")
+    print(df.groupby("s").bound.max().round(5).to_string())
+    print(f"\ncertified (bound >= measured) in "
+          f"{int(df.certified.sum())}/{len(df)} points; "
+          f"max bound {df.bound.max():.4f}")
     print("saved results/window_subopt.csv")
 
 
