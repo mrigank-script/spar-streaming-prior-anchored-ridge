@@ -470,7 +470,7 @@ The OGD regret slopes ($-0.65$ isotropic, $-1.08$ ill-conditioned) lie within th
 \subsection{Robustness Outside the Model Class}
 Three generators outside the linear-Gaussian, constant-rate class: nonlinear targets ($y = \tanh(x^\top w^*) + \varepsilon$), covariate shift (feature scale doubles mid-stream), and a noise-regime change ($\sigma^2$ rising from $0.01$ to $0.05$, no target drift).
 The SPAR-EG mixtures lead on nonlinear targets and are best-or-tied under the noise-regime change; under covariate shift the Kalman family leads ($0.268$ true-noise, $0.284$ estimated-$R$), with SPAR-EG$^+$ and SPAR-Pull ahead of the anchored and leaky methods.
-No SPAR method diverged under any mismatch, while the $\lambda = 0.995$ leaky method degraded sharply on nonlinear targets (numbers in Online Appendix~\ref{app:protocol}).
+No SPAR method diverged under any mismatch, while the $\lambda = 0.995$ leaky method degraded sharply on nonlinear targets (numbers in Online Appendix~\ref{app:protocol}). These map onto the assumptions: the noise-regime change keeps the stream sub-Gaussian with a larger bounded variance, so the concentration bound applies with the inflated proxy (Remark~\ref{rem:mixing}); covariate shift violates the stationary-covariance hypothesis and the nonlinear target violates the linear-Gaussian class, so those two are reported empirically without a concentration guarantee. Across the $105$ mismatch runs no SPAR method diverged, against $7$ divergences in $210$ baseline runs (\texttt{results/factorial\_mismatch.csv}).
 
 \subsection{A Real High-dimensional Stream}
 \label{sec:realstream}

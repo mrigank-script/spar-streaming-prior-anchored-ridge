@@ -551,6 +551,16 @@ The union bound over time points makes the guarantee uniform over the whole stre
 The measured rate is at or below the nominal level at $\delta = 0.10$ and $0.05$, with a slight exceedance at $\delta = 0.01$ on ill-conditioned spectra (Appendix~\ref{app:protocol}).
 \end{remark}
 
+\begin{remark}[Mixing and heavy tails]
+\label{rem:mixing}
+The bound uses only the sub-exponential martingale-difference structure of $z_t$. For a stationary stream with autocorrelations $\rho_k = \operatorname{Corr}(z_t,z_{t-k})$ the EMA variance is
+\[
+\operatorname{Var}(Z_t) \;\le\; \frac{\sigma_z^2}{m_{\mathrm{eff}}}\Bigl(1 + 2\sum_{k\ge1}|\rho_k|(1-\eta_f)^k\Bigr) \;\le\; \frac{\sigma_z^2}{m_{\mathrm{eff}}}\,(1 + 2S),
+\qquad S := \sum_{k\ge1}|\rho_k|,
+\]
+so the Freedman bound and the time-uniform guarantee of Proposition~\ref{prop:falsealarm} hold verbatim with $\nu_z^2$ replaced by $\nu_z^2(1+2S)$: this covers geometrically mixing streams ($\sum|\rho_k|<\infty$), and, because $|\rho_k|\le\varphi_k^{1/2}$, stationary $\varphi$-mixing streams with summable coefficients. Under heavy tails with $\E|z|^{2+p}<\infty$ ($p>0$) the Gaussian tail is replaced by a Fuk--Nagaev bound, the threshold scales as $(T/\delta)^{1/(2+p)}$ in place of $\sqrt{\log(T/\delta)}$, and the false-alarm rate remains at most $\delta$ at that larger threshold.
+\end{remark}
+
 \subsection{Proof of Proposition~\ref{prop:ocowrap}(i) (projected gradient)}
 \label{app:proof-composition}
 
