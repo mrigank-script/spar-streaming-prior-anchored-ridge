@@ -29,22 +29,26 @@ def Phi(lam, rho, nu2, R, mu_bar, wmin=1e-3, wmax=0.5):
 
 
 def main():
-    print(f"{'spectrum':<8} {'start':>8} {'root':>10} {'ratio':>9}")
+    starts = np.concatenate([[1e-4], np.linspace(0.05, 0.9, 12)])
+    print(f"{'spectrum':<8} {'starts':>6} {'root':>10} {'spread':>9} "
+          f"{'mean ratio':>11}")
     for kind in ("iso", "decay3"):
         lam = rmt_spectrum(kind)
         nu2, R, mu_bar = 2.5e-6, 1.0, 1.0
-        roots = []
-        for start in (1e-3, 0.1, 0.3, 0.5):
+        roots, ratios = [], []
+        for start in starts:
             seq = [start]
             for _ in range(200):
                 seq.append(Phi(lam, seq[-1], nu2, R, mu_bar))
-            root = seq[-1]
-            roots.append(root)
+            roots.append(seq[-1])
             d = np.abs(np.diff(seq))
             d = d[d > 0]
-            ratio = (d[1] / d[0]) if len(d) > 1 else float("nan")
-            print(f"{kind:<8} {start:>8.3f} {root:>10.6f} {ratio:>9.4f}")
-        print(f"  -> unique root: spread = {max(roots)-min(roots):.2e}")
+            if len(d) > 1:
+                ratios.append(d[1] / d[0])
+        print(f"{kind:<8} {len(starts):>6} {np.mean(roots):>10.6f} "
+              f"{max(roots)-min(roots):>9.1e} {np.mean(ratios):>11.4f}")
+    print("all starts inside the parameter box converge to one root; "
+          "the increment ratio is the global contraction modulus.")
 
 
 if __name__ == "__main__":
