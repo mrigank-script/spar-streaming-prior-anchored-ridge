@@ -233,6 +233,7 @@ The subtraction still matters: an estimator that omits the floor term, such as $
 \emph{Two-scale timescale separation.}
 The excess detector presupposes $h_f \ll \omega^{-1} \ll T_{\mathrm{drift}} \ll h_{\mathrm{slow}}$: the fast average settles at the post-onset level while the slow average still holds the pre-drift level, so $\widehat E_t$ isolates the drift excess.
 The default $h_{\mathrm{slow}} = 20{,}000 \approx 2T$ enforces this on the grid; a drift persisting beyond $h_{\mathrm{slow}}$ would relax both averages toward the same level and close the window.
+The \emph{sticky-floor} variant removes this limitation: the slow baseline is updated only while the fast average stays within a small margin of it, so under a sustained drift the baseline is frozen at the pre-drift noise level and the excess $\widehat E_t$ stays open-ended. On a constant-velocity stream with a post-onset horizon far longer than $h_{\mathrm{slow}}$, the sticky floor keeps the window open at the drift-optimal scale and reduces the tail MSE by $2.3\times$ (isotropic, $0.068$ vs.\ $0.153$) and $1.6\times$ (ill-conditioned, $0.051$ vs.\ $0.079$) relative to the fixed horizon, which under-opens (\texttt{scripts/sustained\_drift.py}; \texttt{results/sustained\_drift.csv}).
 
 \emph{Plug-in gap in the window iteration.}
 Theorem~\ref{thm:window} is stated with the exact coefficient $c' = \sigma^2 d_{\mathrm{eff}}(\rho)$, $d_{\mathrm{eff}} = \sum_i (1-s_i)^2$, whereas the runtime rule uses the mean-field plug-in $\widehat c' = \sigma^2 D(1-\bar s)^2$.
