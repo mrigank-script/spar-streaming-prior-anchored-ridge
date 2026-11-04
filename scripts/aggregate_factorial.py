@@ -35,15 +35,6 @@ def load_all():
         keep="last")
 
 
-def family_best(df, prefix):
-    """Best member of a sweep family per (config, seed), by mse_overall."""
-    sub = df[df.method.str.startswith(prefix)]
-    if sub.empty:
-        return None
-    idx = sub.groupby(["spectrum", "drift", "prior", "noise", "seed"])["mse_overall"].idxmin()
-    return sub.loc[idx]
-
-
 def main() -> None:
     df = load_all()
     df = df[~df.method.str.startswith("wiseftgrid")]  # keep the chosen-alpha arm

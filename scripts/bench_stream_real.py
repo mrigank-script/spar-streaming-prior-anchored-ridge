@@ -6,8 +6,8 @@ range and no per-configuration tuning.
 
 Design.  Features at hour t are the log1p loads of all 321 clients
 (standardized on the warm-up) plus an intercept and hour-of-day sine/cosine
-(D = 324); the target is the log1p load of one held-out client at t + 1,
-centered on its warm-up mean.  Three target clients (25th, 50th, 75th
+(D = 324); the target is the log1p load of one held-out client at t + 1
+(its hour-t load is among the features), centered on its warm-up mean.  Three target clients (25th, 50th, 75th
 percentile of mean load) give three tasks; every arm sees the same stream.
 Baselines are swept over their own hyperparameter and reported at the best
 setting (oracle-tuned, which favours them); the SPAR arms use the grid

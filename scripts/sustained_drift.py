@@ -6,8 +6,8 @@ difference detector closes the window.  The sticky floor updates the slow
 baseline only while no excess is present, so under sustained drift it stays
 frozen at the pre-drift noise level and the excess remains positive.
 
-Stream: an abrupt target jump at the end of the warm-up followed by a long
-sustained drift (post-onset horizon >> h_slow = 1/base_eta = 20000).
+Stream: a constant-velocity target after the warm-up (no jump), sustained
+over a horizon much longer than h_slow = 1/base_eta = 20000.
 
 Writes results/sustained_drift.csv.
 """
@@ -25,7 +25,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from rls_baselines import make_prior, make_stream_fac, run_spar_kf  # noqa: E402
+from rls_baselines import run_spar_kf  # noqa: E402
 
 D, T, T_WARM = 128, 80000, 20000
 NU = 1.5e-3

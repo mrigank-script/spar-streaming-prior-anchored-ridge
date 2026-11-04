@@ -44,7 +44,13 @@ def load_grid() -> pd.DataFrame:
 
 
 def family_best(df: pd.DataFrame, prefix: str) -> pd.DataFrame:
-    sub = df[df.method.str.startswith(prefix)]
+    # prefix match only for the swept families ("leaky[", "leaky_batch[");
+    # exact match for the single SPAR arms, so "spar_kf" does not also
+    # collect "spar_kf2" and "spar_eg" does not collect "spar_eg_plus".
+    if prefix.endswith("["):
+        sub = df[df.method.str.startswith(prefix)]
+    else:
+        sub = df[df.method == prefix]
     idx = sub.groupby(KEY)["mse_overall"].idxmin()
     return sub.loc[idx, KEY + ["mse_overall"]].rename(
         columns={"mse_overall": prefix.rstrip("[")})

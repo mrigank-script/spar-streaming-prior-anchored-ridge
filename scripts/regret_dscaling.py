@@ -1,6 +1,7 @@
 """Dimension scaling of the Proposition 4(i) regret.
 
-At a fixed horizon (T = 9000, drift phase a fixed 1,000 steps, as in the
+At a fixed horizon (T = 9000 steps total, 8000 evaluation steps, drift
+phase a fixed 1,000 steps, as in the
 horizon-scaling study), the per-step regret of the scalar segment arm and
 the D-dimensional profile arm against the best fixed scalar pull
 (11-point grid, each comparator arm with its own refresh trajectory),

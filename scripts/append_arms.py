@@ -15,8 +15,8 @@ extras = results/factorial_extras.csv):
   vff[...]  (six members)                       extras  (main)
   ogd_profile, vff_info[...]                    extras  (main)
   ogd_profile_d                                extras  (main)
-  spar_eg_plus, kf_causal[q*=...]               extras  (main + extra)
-  kf_est_causal, kf_est_slow_causal             extras  (main)
+  spar_eg_plus, kf_causal                       extras  (main + extra)
+  kf_est[q=1e-06], kf_est_slow[q=1e-06]         extras  (main)
 """
 
 import os
@@ -100,17 +100,17 @@ def run_rls_sym(x, y, T_warm, lam, rho=0.1):
 
 
 def run_kf_causal(x, y, T_warm, t1, qs=(1e-6, 1e-5, 1e-4)):
-    """Random-walk Kalman with q selected causally on the stationary
-    pre-drift segment only; returns (method name, predictions)."""
-    y_te = y[T_warm:]
-    pre = slice(0, max(t1 - T_warm, 1))
+    """Estimated-noise Kalman with the slow R horizon and q selected on a
+    held-out slice of the warm-up (no evaluation-period observation enters
+    the choice)."""
+    fit_w = int(0.75 * T_warm)
     cand = []
     for q in qs:
-        preds_q = run_kf(x, y, T_warm, q=q, R=0.01)
-        cand.append((float(np.mean((preds_q[pre] - y_te[pre]) ** 2)),
-                     q, preds_q))
-    _, q_star, preds = min(cand)
-    return f"kf_causal[q*={q_star:g}]", preds
+        preds_q = run_kf_est(x, y, fit_w, q=q, eta_R=5e-5)
+        tail = preds_q[:T_warm - fit_w]
+        cand.append((float(np.mean((tail - y[fit_w:T_warm]) ** 2)), q))
+    _, q_star = min(cand)
+    return "kf_causal", run_kf_est(x, y, T_warm, q=q_star, eta_R=5e-5)
 
 
 # ---------------------------------------------------------------- registry
@@ -205,14 +205,10 @@ ARMS = [
          lambda x, y, T_warm, G_init, ctx: [
              run_kf_causal(x, y, T_warm, ctx["t1"])]),
     # causally-tuned estimated-R Kalman arms
-    _simple("kf_est_causal[q=1e-06]", "extras", "main", False,
+    _simple("kf_est[q=1e-06]", "extras", "main", False,
             lambda x, y, w, g: run_kf_est(x, y, w, q=1e-6, eta_R=0.01)),
-    _simple("kf_est_causal[q=1e-05]", "extras", "main", False,
-            lambda x, y, w, g: run_kf_est(x, y, w, q=1e-5, eta_R=0.01)),
-    _simple("kf_est_slow_causal[q=1e-06]", "extras", "main", False,
+    _simple("kf_est_slow[q=1e-06]", "extras", "main", False,
             lambda x, y, w, g: run_kf_est(x, y, w, q=1e-6, eta_R=5e-5)),
-    _simple("kf_est_slow_causal[q=1e-05]", "extras", "main", False,
-            lambda x, y, w, g: run_kf_est(x, y, w, q=1e-5, eta_R=5e-5)),
 ]
 
 
@@ -241,9 +237,9 @@ def _kf_preds_cache():
 
 def load_done(dest_csv):
     """Per-method done sets from one CSV: (spec, drift, prior, noise,
-    seed, method). The kf_causal arm writes a dynamic method name per
-    run (kf_causal[q*=...]); both the full name and the registry name
-    are recorded so the arm-level check matches."""
+    seed, method). kf_causal writes a fixed name; the startswith guard
+    keeps older dynamic kf_causal rows readable so the arm-level check
+    still matches."""
     done = set()
     if not dest_csv.exists():
         return done

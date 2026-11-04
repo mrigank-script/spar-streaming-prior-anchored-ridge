@@ -81,8 +81,8 @@ def mc_stats(kind, D, w, rho, n=200, T=6000):
         B = Xw.T @ (y * np.sqrt(sw))
         W = np.linalg.solve(A + rho * np.eye(D), B + rho * w_star)
         dW = W - w_star
-        sig = (Q0 * lam0) @ Q0.T                      # population covariance
-        risks.append(float(dW @ sig @ dW))
+        proj = Q0.T @ dW                             # population risk in O(D^2)
+        risks.append(float(np.sum(lam0 * proj ** 2)))
     r = np.array(risks)
     return r.mean(), r.std(ddof=1) / np.sqrt(n)
 

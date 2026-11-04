@@ -67,23 +67,28 @@ def main() -> None:
             d_eff, c_hat = coeffs(lam, rho)
             ratio = d_eff / max(c_hat, 1e-12)
             gain = 2.0 * (ratio - 1.0)
-            rows.append(dict(dead_fraction=p, rho=rho, d_eff=d_eff,
-                             c_hat=c_hat, ratio=ratio, gain=gain,
-                             plug_in_contracts=bool(gain < 1.0)))
+            rows.append(dict(kind="coeff", dead_fraction=p, rho=rho,
+                             d_eff=d_eff, c_hat=c_hat, ratio=ratio,
+                             gain=gain, plug_in_contracts=bool(gain < 1.0),
+                             w_plugin=float("nan"), w_exact=float("nan"),
+                             omega_star=float("nan")))
             print(f"{p:>5.2f} {rho:>6.3f} {d_eff:>9.4f} {c_hat:>9.4f} "
                   f"{ratio:>7.3f} {gain:>7.3f} {str(gain < 1.0):>9}")
 
     # Simulated cubed-window iteration on the 50%-dead spectrum.
     omega_star = 0.02
     lam = spectrum(0.5)
+    d_eff, c_hat = coeffs(lam, 1e-2)
+    ratio = d_eff / max(c_hat, 1e-12)
+    gain = 2.0 * (ratio - 1.0)
     w_plugin = iterate(lam, 1e-2, exact=False, omega_star=omega_star)
     w_exact = iterate(lam, 1e-2, exact=True, omega_star=omega_star)
     print(f"\n50%-dead spectrum, rho=0.01, exact optimum w*={omega_star}:")
     print(f"  plug-in iteration final w = {w_plugin:.4f} (cap 0.20)")
     print(f"  exact-d_eff iteration final w = {w_exact:.4f}")
-    rows.append(dict(dead_fraction=0.5, rho=1e-2, d_eff=float("nan"),
-                     c_hat=float("nan"), ratio=2.0, gain=2.0,
-                     plug_in_contracts=False, w_plugin=w_plugin,
+    rows.append(dict(kind="sim", dead_fraction=0.5, rho=1e-2, d_eff=d_eff,
+                     c_hat=c_hat, ratio=ratio, gain=gain,
+                     plug_in_contracts=bool(gain < 1.0), w_plugin=w_plugin,
                      w_exact=w_exact, omega_star=omega_star))
     pd.DataFrame(rows).to_csv(ROOT / "results" / "dead_direction.csv",
                               index=False)

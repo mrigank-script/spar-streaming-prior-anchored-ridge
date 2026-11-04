@@ -48,7 +48,7 @@ def main() -> None:
                 seed=1000 + seed, D=D, T=T, sigma=np.sqrt(sigma2_true),
                 spectrum=spectrum, drift="none")
             _, _, (sf, ss) = run_spar_v2(
-                x, y, T_warm, rho_init=0.1, alpha=1.0,
+                x, y, T_warm, rho_init=0.1, alpha=1.0, resid_fast=resid_fast,
                 adaptive_rho=False, refresh=True, return_diag=True)
             z = (sf - ss) / sigma2_true
             max_z[spectrum].append(float(np.max(z)))

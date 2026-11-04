@@ -55,17 +55,6 @@ def stats_block(df: pd.DataFrame, methods: list[str]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def family_best(df: pd.DataFrame, prefix: str):
-    sub = df[df.method.str.startswith(prefix)]
-    if sub.empty:
-        return None
-    means = sub.groupby("method").mse_overall.mean()
-    member = means.idxmin()
-    g = sub[sub.method == member]
-    return dict(method=member, mean=g.mse_overall.mean(),
-                sd=g.mse_overall.std(), worst=g.mse_overall.max(), n=len(g))
-
-
 def main() -> None:
     df = load()
     main = df[df.noise.eq("gauss") & df.drift.isin(MAIN_DRIFTS)
