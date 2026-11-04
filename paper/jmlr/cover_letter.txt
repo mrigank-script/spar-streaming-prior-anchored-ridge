@@ -23,7 +23,8 @@ from streaming residuals and is evaluated on a factorial grid of synthetic
 streams, on an hourly electricity stream, and on BCI IV 2a/2b, with the
 algebraic core, the refresh chain, and the regret bounds formalized in Lean 4.
 The contribution is a closed-form, machine-checked theory of anchored
-forgetting, bridging forgetting-factor heuristics and a principled control law.
+forgetting, in which the forgetting factor and anchor strength follow from
+measured conflict and drift energy rather than from a tuned heuristic.
 
 Relation to prior work / originality.
 The manuscript is not under consideration at any other journal or conference and

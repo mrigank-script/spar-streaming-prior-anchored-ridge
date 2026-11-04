@@ -111,7 +111,7 @@ The cycle-averaged solution lags the pure-leaky path by
   \;=\; \frac{s\,\nu k\,(1 + 2s - s^2)}{2\,(1-s)^2},
 \]
 linear in the cadence and vanishing as $s \to 0$; the within-cycle residual adds a variance term of order $s^2 \nu^2 k^2/12$.
-The first summand is the anchor's accumulated staleness---each cycle's drift persists into the anchor with weight $a^j$, summing to $a/(1-a)$---and the second is the within-cycle advance, which makes the within-cycle correction exact and adds the geometric term.
+The first summand is the anchor's accumulated staleness (each cycle's drift persists into the anchor with weight $a^j$, summing to $a/(1-a)$), and the second is the within-cycle advance, which makes the within-cycle correction exact and adds the geometric term.
 The continuous-refresh limit of Lemma~\ref{lem:zerolag}(ii) is the instantaneous version of the same equilibrium: at the refresh instant the anchor adds no lag beyond $L$, and the correction $\nu k\,a/(1-a)$ is precisely what the target's advance between refreshes contributes.
 
 The data-path noise does not decorrelate between refreshes: the leaky accumulator gives $\mathbb{E}[\epsilon_m \epsilon_{m-j}] = r_k^{\,j} v$ with $r_k = \alpha^k$ ($\alpha = 1-\omega$ the forgetting factor), which at the nominal constants ranges over $r_{10} \in [0.60, 0.995]$. The correlation is material at these operating points.
@@ -137,9 +137,9 @@ The lower endpoint is exact as well: subtracting $(1-s)^2$ from the bracket fact
 \]
 and $s^3-4s^2+2s+2 = 1+(s-1)(s^2-3s-1) \ge 1$ on $[0,1]$, so the numerator is nonnegative and $\Psi(s,r_k)\ge(1-s)^2$ (\texttt{refresh\_variance\_lb} in \texttt{Core.lean}).
 Hence the frozen-anchor plug-in $c'$ lower-bounds the exact variance and the window estimator errs toward larger, safer windows.
-Both endpoints are exact: $r_k \to 0$ (refresh cycles long against the noise memory) recovers the uncorrelated reduction $v[1 - 2s(1+s-s^2)/(1+a)]$, and $r_k \to 1$ (continuous refresh) gives $\mathrm{Var}(W) \to v$---the inert-anchor limit of Lemma~\ref{lem:zerolag}(ii), now an exact endpoint of a single formula rather than a separate statement.
+Both endpoints are exact: $r_k \to 0$ (refresh cycles long against the noise memory) recovers the uncorrelated reduction $v[1 - 2s(1+s-s^2)/(1+a)]$, and $r_k \to 1$ (continuous refresh) gives $\mathrm{Var}(W) \to v$, the inert-anchor limit of Lemma~\ref{lem:zerolag}(ii), now an exact endpoint of a single formula rather than a separate statement.
 The cadence therefore trades two real costs: refreshing fast lets the anchor co-move with the data path and erases its variance benefit, refreshing slowly inflates the lag term $\mu_i\,\Delta_k(s)^2$, and the default $k = 10$ falls within the tradeoff.
-The two costs are paid in different directions: the excess lag blows up as $s \to 1$, but the directions with $s \approx 1$ are precisely the weakly excited ones ($\mu_i \ll \rho$), where the lag's risk contribution is negligible---the filter-bank property of the $\beta_i = 1 - s_i$ refresh, and the reason Proposition~\ref{prop:conflict} drives $\rho^*$ down, and the lag with it, exactly when measured conflict grows.
+The two costs are paid in different directions: the excess lag blows up as $s \to 1$, but the directions with $s \approx 1$ are precisely the weakly excited ones ($\mu_i \ll \rho$), where the lag's risk contribution is negligible. This is the filter-bank property of the $\beta_i = 1 - s_i$ refresh, and the reason Proposition~\ref{prop:conflict} drives $\rho^*$ down, and the lag with it, exactly when measured conflict grows.
 
 \medskip
 \noindent\emph{Remark (drift-induced cross term).}
@@ -155,7 +155,7 @@ The cross term therefore inflates the effective conflict to $c_{\mathrm{eff}} = 
 \begin{proof}[Proof of Theorem~\ref{thm:window}]
 \emph{Step 0 (finite cadence to the surrogate).}
 The finite-cadence risk \eqref{eq:app-window-risk} combines Theorem~\ref{thm:cadence}'s two exact steady-state objects: the per-direction variance is $v_i\Psi(s_i,r_k)$ with $v_i=\sigma^2/(n_{\mathrm{eff}}\mu_i)$, and the per-direction lag is $\nu_i/\omega+\Delta_k(s_i)$; the within-cycle fluctuation contributes the $O(k^2\nu^2s^2)$ term derived in Appendix~\ref{app:cadence}.
-Because $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for all $r_k \in [0,1)$ (\texttt{refresh\_variance\_lb}), the frozen-anchor surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ lower-bounds the exact cycle-averaged variance term at every cadence, and $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$ by Jensen; the runtime plug-in therefore underestimates the variance coefficient, returning a window no smaller than the exact-optimal one---the over-forgetting, safety-asymmetric direction of Step~4.
+Because $(1-s_i)^2 \le \Psi(s_i,r_k) \le 1$ for all $r_k \in [0,1)$ (\texttt{refresh\_variance\_lb}), the frozen-anchor surrogate $c'\,\omega/(2-\omega)+\nu^2_\Sigma/\omega^2$ lower-bounds the exact cycle-averaged variance term at every cadence, and $D(1-\bar s)^2 \le d_{\mathrm{eff}}(\rho)$ by Jensen; the runtime plug-in therefore underestimates the variance coefficient, returning a window no smaller than the exact-optimal one, the over-forgetting safety-asymmetric direction of Step~4.
 The finite-cadence lag residual is bounded at the runtime range: with $b(s)=s(2-s)/(1-s)^2$ and $k\omega \le 1/2$, $\Delta_k(s_i)=s_i\nu_i k\bigl(b(s_i)+\tfrac12\bigr)\le \tfrac12 s_i\bigl(b(s_i)+\tfrac12\bigr)\nu_i/\omega$, a vanishing fraction of the leading lag ($\le 0.4\%$ for $s_i\le 0.1$ at $k\omega=0.5$) whose prediction cost $\mu_i\Delta_k(s_i)^2$ is concentrated in weakly excited directions.
 \begin{proposition}[Surrogate value gap]
 \label{prop:gap}
@@ -211,7 +211,7 @@ For the leading-order (cubic) model $\widetilde R(\omega) = c\,\omega + \nu^2/\o
 which is formalized (\texttt{window\_optimum} in \texttt{Ogd.lean}); substituting $c = c'/2$ reproduces the 4-form above.
 
 \emph{Step 3 (drift inversion).}
-At quasi-static equilibrium the prequential residual excess equals the full steady-state risk---lag and variance together:
+At quasi-static equilibrium the prequential residual excess equals the full steady-state risk of lag and variance together:
 \[
   \E[r_t^2] - \sigma^2
   \;=\; c'\,\frac{\omega}{2-\omega} + \frac{\nu^2_\Sigma}{\omega^2}
@@ -227,7 +227,7 @@ Solving for the drift power at the current window gives
 \]
 where $\widehat\sigma^2_{\mathrm{fast}}, \widehat\sigma^2_{\mathrm{slow}}$ are the fast and slow residual EMAs.
 One subtlety is forced by the estimator's own construction: the slow baseline is itself an average of $r_t^2$, so at stationarity $\E[\widehat\sigma^2_{\mathrm{slow}}] = \sigma^2 + \widehat c' \omega_{\mathrm{slow}}/(2 - \omega_{\mathrm{slow}})$, not the pure noise floor $\sigma^2$.
-Reading the first parenthesis as the two-scale excess $\widehat E_t$ (not as $\E[r_t^2] - \sigma^2$ with a hypothetical pure noise-floor estimate) matters because, on drift onset, $\E[\widehat E_t] \approx \nu^2_\Sigma/\omega^2 + c'\omega/(2-\omega) - c'\omega_{\mathrm{slow}}/(2-\omega_{\mathrm{slow}})$, and subtracting the current window's floor isolates $\nu^2_\Sigma/\omega^2$ up to the pre-drift floor $c'\omega_{\mathrm{slow}}/(2-\omega_{\mathrm{slow}})$---negligible exactly when the pre-drift window sits at $\omega_{\min}$, the quasi-static regime of Theorem~\ref{thm:window}.
+Reading the first parenthesis as the two-scale excess $\widehat E_t$ (not as $\E[r_t^2] - \sigma^2$ with a hypothetical pure noise-floor estimate) matters because, on drift onset, $\E[\widehat E_t] \approx \nu^2_\Sigma/\omega^2 + c'\omega/(2-\omega) - c'\omega_{\mathrm{slow}}/(2-\omega_{\mathrm{slow}})$, and subtracting the current window's floor isolates $\nu^2_\Sigma/\omega^2$ up to the pre-drift floor $c'\omega_{\mathrm{slow}}/(2-\omega_{\mathrm{slow}})$, which is negligible exactly when the pre-drift window sits at $\omega_{\min}$, the quasi-static regime of Theorem~\ref{thm:window}.
 The subtraction still matters: an estimator that omits the floor term, such as $(\widehat\E[r_t^2] - \widehat\sigma^2)\omega^2$, is strictly increasing in $\omega$ (it equals $\nu^2_\Sigma + c'\omega^3/(2-\omega)$ at equilibrium) and therefore admits no positive fixed point of the estimator iteration $\omega \mapsto \omega^*(\widehat\nu^2_\Sigma)$, driving the window to its cap under sustained oscillation, whereas the variance-floor-subtracted estimator is exact at equilibrium and the iteration converges to the minimizer of Step 2; under stationarity $\E[\widehat E_t] \to 0$ and the clip pins the window at $\omega_{\min}$, the conservative direction of Step 4.
 
 \emph{Two-scale timescale separation.}
@@ -251,7 +251,7 @@ The exact $d_{\mathrm{eff}}$ is available from the eigenvalues already computed 
 Evaluating $R$ at $c\,\omega^*$ with $c > 1$ (drift overestimated, window too short) costs $O(c - 1)$ through the linear variance term, while $c < 1$ (drift underestimated, window too long) pays the quadratic lag blow-up $c^{-2}$.
 As in Proposition~\ref{prop:minimax}, the conservative choice is to overestimate the adversary.
 This mirrors the measured flatness of the Kalman $q$-sweep and the divergence of the leaky $\lambda$-sweep one step below its best stable window (Section~\ref{sec:experiments}).
-The tradeoff itself is classical---misadjustment versus lag, from the LMS analysis of \citet{widrow1976}, whose optimum is a square-root law for random-walk drift---and the $1/3$-power law for linear drift shares the $2/3$ exponent of the dynamic-regret rate of \citet{besbes2015}. The constant is specific to the anchored accumulator, and the prequential inversion of Step 3 allows online estimation without known drift parameters.
+The tradeoff itself is classical: misadjustment versus lag, from the LMS analysis of \citet{widrow1976}, whose optimum is a square-root law for random-walk drift. The $1/3$-power law for linear drift shares the $2/3$ exponent of the dynamic-regret rate of \citet{besbes2015}. The constant is specific to the anchored accumulator, and the prequential inversion of Step 3 allows online estimation without known drift parameters.
 
 \medskip
 \noindent\textbf{Proof of Corollary~\ref{cor:mixed} (mixed-drift master law).}
@@ -586,8 +586,8 @@ Then
 \]
 by the Davis--Kahan $\sin\Theta$ theorem in the two-subspace form \citep{davis1970,wedin1972}, so the per-direction refresh with a stale basis errs by at most $O(\epsilon/\delta)\,\|W - G\|$ per refresh cycle.
 A refresh cycle performed in a basis rotated by more than the pull displacement applies the intended per-direction weights to the wrong coordinates, at a cost proportional to the rotation angle times $\|W - G\|$.
-Three regimes follow: with static, well-separated spectra (the ill-conditioned grid) the bound is small and the per-direction estimator is stable and wins pre-drift; with flat spectra ($\delta \to 0$) the eigenbasis is essentially arbitrary and per-direction state is noise; with rotating spectra (covariance drift) the basis drifts within the estimator's memory and per-direction state scrambles.
-The scalar-strength method aggregates over directions and is invariant to basis rotation, which is why it is the robust default.
+Three regimes follow: with static, well-separated spectra (the ill-conditioned grid) the bound is small and the per-direction estimator is stable and wins pre-drift; with flat spectra ($\delta \to 0$) the eigenbasis is arbitrary and per-direction state is noise; with rotating spectra (covariance drift) the basis drifts within the estimator's memory and per-direction state scrambles.
+The scalar-strength method aggregates over directions and is invariant to basis rotation, so it is the safer default.
 
 \subsection{Spectral retention (Theorem~\ref{thm:rmt})}
 \label{app:rmt}
@@ -858,7 +858,7 @@ The random-orientation rank-deficient case is covered by Corollary~\ref{cor:rmt-
 \emph{Operating points.}
 At the method's own converged control pair the deterministic equivalent matches the arm's Monte Carlo risk to within $9.8\%$ (isotropic), $12.7\%$ (decay3), and $1.9\%$ (rank-deficient).
 \emph{Finite-$D$ concentration.}
-Scoring the risk with the population covariance---the out-of-sample quantity Theorem~\ref{thm:rmt} is stated for---the relative discrepancy $|R_{\mathrm{MC}}-R_{\mathrm{DE}}|/R_{\mathrm{DE}}$ at fixed $\zeta$ is within the Monte Carlo standard error at every $D \in \{64,128,256,512\}$ over $\zeta \in \{1,2\}$ and $\rho \in \{10^{-2},10^{-1}\}$: for $D \ge 128$ the maximum relative bias is $1.1\%$ and the median $|\text{bias}|/\text{s.e.}$ is $0.66$, with no systematic growth in $D$, consistent with an $O(1/D)$ deterministic-equivalent error (\texttt{py scripts/finite\_d\_conc.py}; \texttt{results/finite\_d\_conc.csv}).
+Scoring the risk with the population covariance, the out-of-sample quantity Theorem~\ref{thm:rmt} is stated for, the relative discrepancy $|R_{\mathrm{MC}}-R_{\mathrm{DE}}|/R_{\mathrm{DE}}$ at fixed $\zeta$ is within the Monte Carlo standard error at every $D \in \{64,128,256,512\}$ over $\zeta \in \{1,2\}$ and $\rho \in \{10^{-2},10^{-1}\}$: for $D \ge 128$ the maximum relative bias is $1.1\%$ and the median $|\text{bias}|/\text{s.e.}$ is $0.66$, with no systematic growth in $D$, consistent with an $O(1/D)$ deterministic-equivalent error (\texttt{py scripts/finite\_d\_conc.py}; \texttt{results/finite\_d\_conc.csv}).
 The fixed-point grid above scores the risk with the in-sample empirical covariance, which adds an $O(D/T)$ in-sample term ($\approx 1.3\%$ at $D=128$, $T=10^4$) on top of this finite-$D$ error.
 The CSV files \texttt{results/rmt\_grid.csv}, \texttt{results/rmt\_verify.csv}, \texttt{results/rmt\_conflict.csv}, and \texttt{results/rmt\_rankdef.csv} record the grids; all rows, full-rank and rank-deficient, support the theorem.
 
@@ -882,7 +882,7 @@ e_\rho(m{+}1) \;\le\; \eta_C L_{\rho\omega}\, e_\omega(m) + (1-\eta_C)\,e_\rho(m
 Setting $a = \eta_\nu L_{\omega\rho}$, $b = \eta_C L_{\rho\omega}$, the two recursions form the coupled system of \texttt{Coupled.lean}.
 
 \emph{The weighted-norm contraction.}
-With the midpoint weight $r := \tfrac12(a/\eta_\nu + \eta_C/b)$---the interval $(a/\eta_\nu,\ \eta_C/b)$ is nonempty exactly when $ab < \eta_\nu\eta_C$, i.e.\ $L_{\omega\rho}L_{\rho\omega} < 1$---the joint rate is
+With the midpoint weight $r := \tfrac12(a/\eta_\nu + \eta_C/b)$, the interval $(a/\eta_\nu,\ \eta_C/b)$ being nonempty exactly when $ab < \eta_\nu\eta_C$, i.e.\ $L_{\omega\rho}L_{\rho\omega} < 1$, the joint rate is
 \[
 \gamma_{\mathrm{cl}} \;=\; \max\bigl\{(1-\eta_\nu) + a/r,\ \ (1-\eta_C) + r\,b\bigr\} \;<\; 1,
 \]
@@ -893,7 +893,7 @@ When the detector's drift-active floor pins $\rho$, $e_\rho \equiv 0$ and the wi
 The complementary one-way case (the strength target insensitive to the window) is the triangular specialization \texttt{joint\_geometric\_triangular}.
 
 \emph{Part (iii): the fluctuation bound.}
-The contracted recursion of part (i) is the scalar Lyapunov inequality whose stationary second moment is bounded in Proposition~\ref{prop:fluct}; the same weighted max-norm $V = \max\{|e_\omega|, r|e_\rho|\}$ bounds the cross moment, $|\E[e_\omega e_\rho]| \le \E[V^2]/r \le q_*/(r(1-\gamma_{\mathrm{cl}})^2)$ (\texttt{weighted\_cross\_le}), so the full stationary second-moment matrix---including its off-diagonal cross-covariance---is controlled entrywise by the scalar bound. The \emph{Loewner-order} matrix least-squares route is what is deliberately not claimed, because entrywise domination of nonnegative error vectors does not lift to the Loewner order (a nonnegative triangle-inequality remainder also cannot be a zero-mean martingale difference); the weighted-norm route gives the entrywise bounds, which is what part (iii) needs.
+The contracted recursion of part (i) is the scalar Lyapunov inequality whose stationary second moment is bounded in Proposition~\ref{prop:fluct}; the same weighted max-norm $V = \max\{|e_\omega|, r|e_\rho|\}$ bounds the cross moment, $|\E[e_\omega e_\rho]| \le \E[V^2]/r \le q_*/(r(1-\gamma_{\mathrm{cl}})^2)$ (\texttt{weighted\_cross\_le}), so the full stationary second-moment matrix, including its off-diagonal cross-covariance, is controlled entrywise by the scalar bound. The \emph{Loewner-order} matrix least-squares route is what is deliberately not claimed, because entrywise domination of nonnegative error vectors does not lift to the Loewner order (a nonnegative triangle-inequality remainder also cannot be a zero-mean martingale difference); the weighted-norm route gives the entrywise bounds, which is what part (iii) needs.
 
 \begin{proposition}[Invariant measure in the co-moving frame]
 \label{prop:ergodic}
