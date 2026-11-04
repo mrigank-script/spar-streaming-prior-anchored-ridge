@@ -474,6 +474,9 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
         C_resid = E, C_floor = 0.5 sigma^2 d_act/T_warm, so
         rho = mu_bar V_sigma / C_sigma has units [x^2] on every branch and
         is invariant to feature rescaling; no inverse of Abar is formed.
+
+    Returns (preds, rhos) by default, or (preds, rhos, ws) when
+    ``return_diag=True``.
     """
     D = x.shape[1]
     A = x[:T_warm].T @ x[:T_warm].astype(np.float64)
