@@ -256,12 +256,14 @@ The cached-basis per-direction head projects each feature into the last refresh'
 \toprule
 method & ms/step at $D = 2048$ \\
 \midrule
-leaky RLS & $32.0$ \\
-AROW & $31.3$ \\
-Kalman & $53.0$ \\
-directional forgetting & $56.3$ \\
-SPAR-Pull-D (cached basis, $O(D^2)$/step) & $52.6$ \\
-SPAR-Pull-S (exact scalar solve, $O(D^3)$/step) & $241$ \\
+leaky RLS & $32.9$ \\
+leaky RLS, information form & $189$ \\
+AROW & $30.6$ \\
+Kalman & $50.5$ \\
+directional forgetting & $58.6$ \\
+SPAR-Pull-D (cached basis, $O(D^2)$/step) & $51.3$ \\
+SPAR-Pull (Algorithm~\ref{alg:spar-pull}, $O(D^3)$/step) & $363$ \\
+SPAR-Pull-S (exact scalar solve, $O(D^3)$/step) & $225$ \\
 \bottomrule
 \end{tabular}
 \end{table}
