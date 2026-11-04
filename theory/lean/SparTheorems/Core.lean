@@ -44,8 +44,8 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `refresh_fixed_point`         : g* = −L − νk·a/(1−a)
 * `refresh_closed_form`         : geometric closed form with rate a^m
 * `refresh_contraction_rate`    : a ∈ (0,1) for s ∈ (0,1)
-* `sum_range_half`              : Σ_{j<k}(j + 1/2) = k2/2
-* `moving_frame_reduction`      : g_{m+1} = a·g_m − (1−s)2·L − a·ν·k
+* `sum_range_half`              : Σ_{j<k}(j + 1/2) = k²/2
+* `moving_frame_reduction`      : g_{m+1} = a·g_m − (1−s)²·L − a·ν·k
 * `cycle_midpoint_average`      : cycle average g_m − ν·k/2
 * `cycle_lag_assembly`          : Δ_k = s·ν·k·(a/(1−a) + 1/2)
 
@@ -57,29 +57,25 @@ elementary real analysis over ℝ; no probability is mechanized.
 * `refresh_anchor_variance`     : steady-state anchor variance system
 * `refresh_variance_form`       : closed-form correlated solution variance
 * `refresh_variance_lt`         : strict variance reduction at every cadence
-* `deff_sub_plugin`             : d_eff − D(1−s̄)2 = Σ(s_i−s̄)2 (exact variance decomposition)
-* `deff_sub_plugin_nonneg`      : the mean-field plug-in D(1−s̄)2 ≤ d_eff (Jensen lower bound)
+* `deff_sub_plugin`             : d_eff − D(1−s̄)² = Σ(s_i−s̄)² (exact variance decomposition)
+* `deff_sub_plugin_nonneg`      : the mean-field plug-in D(1−s̄)² ≤ d_eff (Jensen lower bound)
 
-### Spectral Invariance and Conditioning
+### Spectral Invariance and the Anchored System
 * `conj_trace`                 : orthogonal conjugation preserves the trace
 * `conj_det`                   : orthogonal conjugation preserves the determinant
-* `windup_ratio_le`            : conditioning ratio ≤ 1 + μmax/ρ
-* `pull_weight_bounds`         : μ/(μ+ρ) ∈ [0,1), ρ/(μ+ρ) ∈ (0,1]
+* `pull_matrix_sum_one`        : data-pull + anchor-pull weight matrices sum to I
+* `diagonal_resolvent`         : the anchored diagonal system inverts
+* `anchored_det_pos`           : the conflict floor makes the anchored system nonsingular
+* `resolvent_trace_effdim`     : effective dimension as a resolvent trace
 
 ### Deterministic-Equivalent Fixed-Point Algebra
-* `de_log_identity`           : e^(zeta q) = 1 + zeta theta at q = log(1+zeta theta)/zeta
-* `de_collapse`               : rho/rho_eff = kappa = log(1+zeta theta)/(zeta theta)
+* `de_collapse`               : ρ/ρ_eff = κ = log(1+ζθ)/(ζθ) (renormalization)
 
 ### Smooth Effective Dimension
 * `smooth_dim_lipschitz`      : μ/(μ+ρ) is 1/ρ-Lipschitz on μ ≥ 0
 
-### Weighted Cross-Covariance Bound
-* `weighted_cross_le`         : r|e_w e_r| ≤ V² for V = max(|e_w|, r|e_r|)
-
 ### Degenerate Active Dimension and Branch Selection
 * `branch_max_lipschitz`      : the branch `max` is Lipschitz at ties
-* `strength_floor_pos`        : the conflict floor is strictly positive
-* `strength_floor_bound`      : the floor bounds the strength target
 
 ### Basis-Invariant Comparators
 * `conj_const_diagonal`      : a constant profile is c*I in every basis
@@ -639,13 +635,12 @@ theorem cycle_lag_assembly (s ν L k : ℝ) (hne : 1 - s * (2 - s) ≠ 0) :
 
 open Matrix
 
-/-! ## Spectral Invariance and Conditioning
+/-! ## Spectral Invariance and the Anchored System
 
-The scalar method uses only the sufficient statistics `A, B, G`; rotating the
-stream by an orthogonal `Q` conjugates the accumulator, and its scalar
-statistics are invariant to that conjugation.  The pull weights stay in the
-unit interval for every excitation, and the anchored conditioning ratio is
-bounded by `1 + μmax/ρ`, independent of the drift. -/
+Conjugation by an orthogonal `Q` preserves the scalar statistics of the
+accumulator: the trace and the determinant are invariant.  In any orthonormal
+basis the anchored normal-equation system is diagonal, its resolvent trace is
+the effective dimension, and a positive floor keeps the system nonsingular. -/
 
 /-- **Trace invariance**: orthogonal conjugation preserves the trace. -/
 theorem conj_trace {n : Type*} [Fintype n] [DecidableEq n]
@@ -663,20 +658,47 @@ theorem conj_det {n : Type*} [Fintype n] [DecidableEq n]
     rwa [Matrix.det_mul, Matrix.det_transpose, Matrix.det_one] at this
   linear_combination A.det * h
 
-/-- **Conditioning bound**: the eigenvalue-interval ratio is at most `1 + μmax/ρ`. -/
-theorem windup_ratio_le (μ μmax ρ : ℝ) (hρ : 0 < ρ) (h : μ ≤ μmax) :
-    (μ + ρ) / ρ ≤ 1 + μmax / ρ := by
-  have hsub : (μ + ρ) / ρ = 1 + μ / ρ := by field_simp; ring
-  rw [hsub]
-  exact add_le_add (le_refl (1 : ℝ)) ((div_le_div_iff_of_pos_right hρ).mpr h)
+/-- **Matrix pull identity**: the data-pull and anchor-pull weight matrices of the
+anchored solve sum to the identity, `diag(μᵢ/(μᵢ+ρ)) + diag(ρ/(μᵢ+ρ)) = 1`. -/
+theorem pull_matrix_sum_one {n : Type*} [Fintype n] [DecidableEq n]
+    (μ : n → ℝ) (ρ : ℝ) (h : ∀ i, μ i + ρ ≠ 0) :
+    Matrix.diagonal (fun i => μ i / (μ i + ρ)) + Matrix.diagonal (fun i => ρ / (μ i + ρ))
+      = (1 : Matrix n n ℝ) := by
+  rw [Matrix.diagonal_add, ← Matrix.diagonal_one]
+  congr 1
+  funext i
+  field_simp [h i]
 
-/-- **Pull weights in the unit interval**: `μ/(μ+ρ) ∈ [0,1)` and `ρ/(μ+ρ) ∈ (0,1]`. -/
-theorem pull_weight_bounds (μ ρ : ℝ) (hμ : 0 ≤ μ) (hρ : 0 < ρ) :
-    0 ≤ μ / (μ + ρ) ∧ μ / (μ + ρ) < 1 ∧ 0 < ρ / (μ + ρ) ∧ ρ / (μ + ρ) ≤ 1 := by
-  have hd : 0 < μ + ρ := by linarith
-  refine ⟨by positivity, ?_, by positivity, ?_⟩
-  · rw [div_lt_one hd]; linarith
-  · rw [div_le_one hd]; linarith
+/-- **Anchored-system resolvent**: the anchored normal-equation matrix
+`diag(μᵢ + ρ)` inverts against `diag((μᵢ+ρ)⁻¹)`, so the anchor makes the
+diagonal system nonsingular for every `ρ > 0`. -/
+theorem diagonal_resolvent {n : Type*} [Fintype n] [DecidableEq n]
+    (μ : n → ℝ) (ρ : ℝ) (h : ∀ i, μ i + ρ ≠ 0) :
+    Matrix.diagonal (fun i => μ i + ρ) * Matrix.diagonal (fun i => (μ i + ρ)⁻¹)
+      = (1 : Matrix n n ℝ) := by
+  rw [Matrix.diagonal_mul_diagonal, ← Matrix.diagonal_one]
+  congr 1
+  funext i
+  exact mul_inv_cancel₀ (h i)
+
+/-- **The conflict floor makes the anchored system nonsingular**: every
+`μᵢ + ρ > 0` gives `det diag(μᵢ + ρ) > 0`, the matrix form of the floor
+argument that keeps the strength estimate finite. -/
+theorem anchored_det_pos {n : Type*} [Fintype n] [DecidableEq n]
+    (μ : n → ℝ) (ρ : ℝ) (h : ∀ i, 0 < μ i + ρ) :
+    0 < (Matrix.diagonal (fun i => μ i + ρ)).det := by
+  rw [Matrix.det_diagonal]
+  exact Finset.prod_pos (fun i _ => h i)
+
+/-- **Effective dimension as a resolvent trace**: `tr(diag((μᵢ+ρ)⁻¹) * diag μ) =
+Σᵢ μᵢ/(μᵢ+ρ)`, the smooth effective dimension of the strength estimator read
+off the anchored system rather than the eigenvalues of `Ā`. -/
+theorem resolvent_trace_effdim {n : Type*} [Fintype n] [DecidableEq n]
+    (μ : n → ℝ) (ρ : ℝ) :
+    (Matrix.diagonal (fun i => (μ i + ρ)⁻¹) * Matrix.diagonal μ).trace
+      = ∑ i, μ i / (μ i + ρ) := by
+  rw [Matrix.diagonal_mul_diagonal, Matrix.trace_diagonal]
+  exact Finset.sum_congr rfl (fun i _ => by rw [div_eq_mul_inv, mul_comm])
 
 /-! ## Eigenbasis Specialization of the Pull Identity
 
@@ -713,13 +735,6 @@ point.  With weight sum `κ = log(1+ζθ)/(ζθ)` and `q = κθ`, the retention
 identity `κθ + s̄ = 1` fixes `q`, and the anchored strength renormalizes as
 `ρ/ρ_eff = κ`, equivalently `ρ_eff = ρ(e^{ζq}-1)/(ζq)`. -/
 
-/-- **DE log identity**: with the substitution `q = log(1+ζθ)/ζ`, the argument
-of the renormalization returns the weight sum, `e^{ζ q} = 1 + ζθ`. -/
-theorem de_log_identity (ζ θ : ℝ) (h1 : 0 < 1 + ζ * θ) (hζ : ζ ≠ 0) :
-    Real.exp (ζ * (Real.log (1 + ζ * θ) / ζ)) = 1 + ζ * θ := by
-  have hcancel : ζ * (Real.log (1 + ζ * θ) / ζ) = Real.log (1 + ζ * θ) := by
-    field_simp
-  rw [hcancel, Real.exp_log h1]
 
 /-- **DE collapse / renormalization**: with `κ = log(1+ζθ)/(ζθ)` and `q = κθ`,
 the anchored strength renormalizes as `ρ/ρ_eff = κ`, equivalently
@@ -755,8 +770,7 @@ The effective dimension in the strength estimator is the resolvent trace
 with no spectral-gap assumption, unlike an integer active-dimension count. -/
 
 /-- **Smooth effective-dimension Lipschitz**: each resolvent term `μ/(μ+ρ)`
-is `1/ρ`-Lipschitz on the excitation half-line `μ ≥ 0`.  The range bound
-`μ/(μ+ρ) ∈ [0,1)` is `pull_weight_bounds`. -/
+is `1/ρ`-Lipschitz on the excitation half-line `μ ≥ 0`, with range `[0,1)`. -/
 theorem smooth_dim_lipschitz (μ μ' ρ : ℝ) (hμ : 0 ≤ μ) (hμ' : 0 ≤ μ')
     (hρ : 0 < ρ) :
     |μ / (μ + ρ) - μ' / (μ' + ρ)| ≤ |μ - μ'| / ρ := by
@@ -772,26 +786,6 @@ theorem smooth_dim_lipschitz (μ μ' ρ : ℝ) (hμ : 0 ≤ μ) (hμ' : 0 ≤ μ
   nlinarith [abs_nonneg (μ - μ'), mul_nonneg hμ hμ', mul_nonneg hμ hρ.le,
     mul_nonneg hμ' hρ.le]
 
-/-! ## Weighted Cross-Covariance Bound
-
-The coupled contraction of Theorem `thm:closedloop` uses the weighted
-max-norm `V = max(|e_ω|, r|e_ρ|)`.  That same norm bounds the cross moment:
-`|e_ω| ≤ V` and `r|e_ρ| ≤ V` give `r|e_ω e_ρ| ≤ V²`, hence
-`E[e_ω e_ρ] ≤ E[V²]/r`, so the cross-quantity covariance is controlled by
-the scalar Lyapunov bound of part (iii), not left unasserted. -/
-
-/-- **Cross-covariance bound from the weighted max-norm**: if the window and
-strength errors satisfy `|e_ω| ≤ V` and `r|e_ρ| ≤ V`, then `r|e_ω e_ρ| ≤ V²`,
-so the cross moment is at most `V²/r`; with `E[V²] ≤ q_*/(1-γ)²` the
-stationary cross-covariance obeys `|E[e_ω e_ρ]| ≤ q_*/(r(1-γ)²)`. -/
-theorem weighted_cross_le (a b r V : ℝ) (hr : 0 < r) (ha : |a| ≤ V)
-    (hb : r * |b| ≤ V) :
-    r * |a * b| ≤ V * V := by
-  have hV : 0 ≤ V := le_trans (abs_nonneg a) ha
-  rw [abs_mul]
-  calc r * (|a| * |b|) = |a| * (r * |b|) := by ring
-    _ ≤ V * V :=
-      mul_le_mul ha hb (mul_nonneg hr.le (abs_nonneg b)) hV
 
 /-! ## Degenerate Active Dimension and Branch Selection
 
@@ -816,19 +810,6 @@ theorem branch_max_lipschitz (a a' b b' c c' : ℝ) :
     _ ≤ max (max |a - a'| |b - b'|) |c - c'| :=
         max_le_max (abs_max_sub_max_le_max _ _ _ _) (le_refl _)
 
-/-- **Floor removes the strength singularity**: the conflict floor keeps the
-selected estimate strictly positive. -/
-theorem strength_floor_pos (a b floor : ℝ) (h : 0 < floor) :
-    0 < max (max a b) floor :=
-  lt_of_lt_of_le h (le_max_right _ _)
-
-/-- **Floor keeps the strength target bounded**: with a strictly positive
-floor, `μ V / max(max a b) floor ≤ μ V / floor` whenever `μ V ≥ 0`. -/
-theorem strength_floor_bound (mu V a b floor : ℝ) (hV : 0 ≤ mu * V)
-    (hfloor : 0 < floor) :
-    mu * V / max (max a b) floor ≤ mu * V / floor := by
-  have hle : floor ≤ max (max a b) floor := le_max_right _ _
-  exact div_le_div_of_nonneg_left hV hfloor hle
 
 /-! ## Basis-Invariant No-Regret Comparators
 

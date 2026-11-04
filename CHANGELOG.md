@@ -21,9 +21,9 @@ Repository and manuscript upgrade cycle.
 - Window surrogate value-gap bound (proposition) with a certified numerical bound.
 - Smooth effective dimension replaces the spectral-gap assumption in the closed-loop Lipschitzness.
 - Weighted cross-covariance bound for the coupled fluctuation.
-- Degenerate active-dimension and floor/branch-selection lemmas.
+- Degenerate active-dimension and branch-selection lemmas; matrix pull-weight, resolvent, and floor identities over Mathlib matrices.
 - Basis-invariant no-regret comparators (constant profiles realize `c*I`).
-- Deterministic-equivalent collapse algebra formalized (`de_log_identity`, `de_collapse`).
+- Deterministic-equivalent collapse algebra formalized (`de_collapse`).
 - Moving-target gap characterized by spectrum and margin.
 - Concentration bound extended to mixing and heavy-tailed streams; mismatch suite scoped.
 
@@ -35,7 +35,7 @@ Repository and manuscript upgrade cycle.
 - Electricity random-client population and multi-step horizon sweep.
 
 ### Manuscript
-- Lean coverage map and declaration count updated (87 declarations).
+- Lean coverage map and declaration count updated (85 declarations).
 - Related-work comparison matrix and quantitative "what is new" positioning.
 - Reproduction instructions updated; derived EEG cache shipped with the artifact.
 

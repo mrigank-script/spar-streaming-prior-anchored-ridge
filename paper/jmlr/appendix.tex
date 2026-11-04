@@ -173,7 +173,7 @@ because $\min_\omega(R_s + \varepsilon) \ge \min_\omega R_s + \inf_\omega \varep
 The bound is subadditivity of the minimum; both terms of $\varepsilon$ are nonnegative because $\Psi(s,r_k) \ge (1-s)^2$ (\texttt{refresh\_variance\_lb}) and $\Delta_k(s) \ge 0$.
 \end{proof}
 
-Numerically, over $k\omega \in [0.005,0.5]$ the surrogate's cubic minimizer is within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ ($5.2\%$ for $s_i \le 0.3$), with the largest gaps at the window floor; the certificate of Proposition~\ref{prop:gap} holds at all $40$ grid points and is at most $39\%$ over the whole range (\texttt{diagnostics.py --diag subopt}; \texttt{results/window\_subopt.csv}, column \texttt{bound}).
+Numerically, over $k\omega \in [0.005,0.5]$ the surrogate's cubic minimizer is within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ ($5.2\%$ for $s_i \le 0.3$), with the largest gaps at the window floor; the certificate of Proposition~\ref{prop:gap} holds at all $40$ grid points and is at most $39\%$ over the whole range.
 In the quasi-static limit $1 \ll k\omega \ll 1/s$, $r_k=(1-\omega)^k \le e^{-\omega k} \to 0$, so $\Psi(s_i,r_k)=(1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i)=o(\nu_i/\omega)$; both corrections vanish and the reduced form \eqref{eq:app-window-risk} is exact, with remainder $o(1)$ uniformly over the regime.
 
 \emph{Step 1 (risk decomposition).}
@@ -233,7 +233,7 @@ The subtraction still matters: an estimator that omits the floor term, such as $
 \emph{Two-scale timescale separation.}
 The excess detector presupposes $h_f \ll \omega^{-1} \ll T_{\mathrm{drift}} \ll h_{\mathrm{slow}}$: the fast average settles at the post-onset level while the slow average still holds the pre-drift level, so $\widehat E_t$ isolates the drift excess.
 The default $h_{\mathrm{slow}} = 20{,}000 \approx 2T$ enforces this on the grid; a drift persisting beyond $h_{\mathrm{slow}}$ would relax both averages toward the same level and close the window.
-The \emph{sticky-floor} variant removes this limitation: the slow baseline is updated only while the fast average stays within a small margin of it, so under a sustained drift the baseline is frozen at the pre-drift noise level and the excess $\widehat E_t$ stays open-ended. On a constant-velocity stream with a post-onset horizon far longer than $h_{\mathrm{slow}}$, the sticky floor keeps the window open at the drift-optimal scale and reduces the tail MSE by $2.3\times$ (isotropic, $0.068$ vs.\ $0.153$) and $1.6\times$ (ill-conditioned, $0.051$ vs.\ $0.079$) relative to the fixed horizon, which under-opens (\texttt{scripts/sustained\_drift.py}; \texttt{results/sustained\_drift.csv}).
+The \emph{sticky-floor} variant removes this limitation: the slow baseline is updated only while the fast average stays within a small margin of it, so under a sustained drift the baseline is frozen at the pre-drift noise level and the excess $\widehat E_t$ stays open-ended. On a constant-velocity stream with a post-onset horizon far longer than $h_{\mathrm{slow}}$, the sticky floor keeps the window open at the drift-optimal scale and reduces the tail MSE by $2.3\times$ (isotropic, $0.068$ vs.\ $0.153$) and $1.6\times$ (ill-conditioned, $0.051$ vs.\ $0.079$) relative to the fixed horizon, which under-opens.
 
 \emph{Plug-in gap in the window iteration.}
 Theorem~\ref{thm:window} is stated with the exact coefficient $c' = \sigma^2 d_{\mathrm{eff}}(\rho)$, $d_{\mathrm{eff}} = \sum_i (1-s_i)^2$, whereas the runtime rule uses the mean-field plug-in $\widehat c' = \sigma^2 D(1-\bar s)^2$.
@@ -244,7 +244,7 @@ The gap is exactly the population variance of the pulls,
 = \sum_{i=1}^D (s_i-\bar s)^2 = D\operatorname{Var}(s) \;\ge\; 0,
 \]
 an identity formalized as \texttt{deff\_sub\_plugin} and \texttt{deff\_sub\_plugin\_nonneg} in \texttt{Core.lean} (Appendix~\ref{app:lean}); it vanishes on an isotropic spectrum and is largest when the pulls are spread out, as on a rank-deficient spectrum whose dead directions carry $s_i = 1$.
-The ratio $c'/c'_{\mathrm{plug\!-\!in}}$ equals $1/(1-p)$ on an isotropic alive block with a dead fraction $p$, so the leading cubed-window gain $2(c'/c'_{\mathrm{plug\!-\!in}}-1)$ is $2p/(1-p)$: it is below one up to $p=1/3$ and reaches $2$ at $p=1/2$, $6$ at $p=3/4$, and $17.7$ at $p=0.9$. Simulating the cubed-window iteration on a $50\%$-dead spectrum, the plug-in coefficient drives the window to its cap while the exact $d_{\mathrm{eff}}$ holds it at the optimum $0.02$ (\texttt{scripts/dead\_direction.py}; \texttt{results/dead\_direction.csv}).
+The ratio $c'/c'_{\mathrm{plug\!-\!in}}$ equals $1/(1-p)$ on an isotropic alive block with a dead fraction $p$, so the leading cubed-window gain $2(c'/c'_{\mathrm{plug\!-\!in}}-1)$ is $2p/(1-p)$: it is below one up to $p=1/3$ and reaches $2$ at $p=1/2$, $6$ at $p=3/4$, and $17.7$ at $p=0.9$. Simulating the cubed-window iteration on a $50\%$-dead spectrum, the plug-in coefficient drives the window to its cap while the exact $d_{\mathrm{eff}}$ holds it at the optimum $0.02$.
 The exact $d_{\mathrm{eff}}$ is available from the eigenvalues already computed at each refresh, at no extra matrix cost; recording the identity makes explicit that the plug-in is the conservative (over-forgetting) endpoint and that the exact coefficient is a free refinement.
 
 \emph{Step 4 (safety asymmetry).}
@@ -282,7 +282,7 @@ Using the exact form in the cycle-averaged risk,
 \[
 R(\omega,\rho) \;=\; \frac{\sigma^2\,\Upsilon(\omega;\rho)}{1-\Upsilon(\omega;\rho)} + \frac{\nu^2_\Sigma}{\omega^2},
 \]
-removes the small-$\zeta$ restriction: over the whole grid range $\zeta \in [0.26, 6.4]$ the exact form matches the Monte Carlo stationary risk to within $5\%$ (median $2.4\%$), whereas the mean-field term deviates by up to $100\%$ at $\zeta = 6.4$ (\texttt{diagnostics.py} \texttt{--diag exactrisk}; \texttt{results/exact\_risk.csv}).
+removes the small-$\zeta$ restriction: over the whole grid range $\zeta \in [0.26, 6.4]$ the exact form matches the Monte Carlo stationary risk to within $5\%$ (median $2.4\%$), whereas the mean-field term deviates by up to $100\%$ at $\zeta = 6.4$.
 The runtime keeps the mean-field plug-in $\hat c'_t$, whose Jensen gap is the conservative direction of Appendix~\ref{app:proofs}; the exact form is the analysis-level statement of the window law, available at every window from the closing eigenvalues, not a runtime change.
 
 \subsection{Proof of Proposition~\ref{prop:conflict}(i) (oracle dominance)}
@@ -353,7 +353,7 @@ As $n \to \infty$ at fixed conflict the optimal strength vanishes, and under sta
 The runtime rule is $\rho^* = \bar\mu_t\,\widehat V^\Sigma_t/\widehat C^\Sigma_t$ with $\widehat V^\Sigma_t = \widehat\sigma^2_t\,d_{\mathrm{act}}/n_t$ and $\widehat C^\Sigma_t = \max\{C^\Sigma_{\mathrm{ref}}, C^\Sigma_{\mathrm{resid}}, C^\Sigma_{\mathrm{floor}}\}$; per direction it reduces to the closed form of Proposition~\ref{prop:conflict}(ii), $\mu_i \hat v_i/\hat c_i = \sigma^2/(n\delta_i^2)$.
 Every branch is in prediction-risk units $[y^2]$: the reference branch is $C^\Sigma_{\mathrm{ref}} = (G_{\mathrm{ref}} - \widehat w)^\top \bar A_t (G_{\mathrm{ref}} - \widehat w) - \widehat V^\Sigma$, the residual branch is $C^\Sigma_{\mathrm{resid}} = E_t$, and the floor is $C^\Sigma_{\mathrm{floor}} = \tfrac12 \widehat\sigma^2 d_{\mathrm{act}}/T_w$.
 The naive conflict $\|G - \widehat w\|^2$ has expectation $C + V$ under the null, so the estimate is debiased by subtracting $\widehat V^\Sigma$; because a refreshed anchor co-moves with the current solve, conflict is measured against the slow reference $G_{\mathrm{ref}}$, while the two-scale residual detector (Proposition~\ref{prop:falsealarm} its calibration model) supplies fast disengagement.
-Under deep stationarity $\widehat C^\Sigma \to 0$ would drive $\rho^* \to \infty$; the floor and a hard cap remove the singularity: $\widehat C^\Sigma \ge C_{\mathrm{floor}} > 0$ keeps $\rho^* = \bar\mu\widehat V/\widehat C \le \bar\mu\widehat V/C_{\mathrm{floor}}$ bounded (\texttt{strength\_floor\_pos}, \texttt{strength\_floor\_bound}), and the branch selection $\widehat C = \max\{C_{\mathrm{ref}}, C_{\mathrm{resid}}, C_{\mathrm{floor}}\}$ is Lipschitz even where the active branch switches (\texttt{branch\_max\_lipschitz}), so the derivative jump at a tie cannot break the contraction. The active dimension is floored at one ($d_{\mathrm{act}} \ge 1$) and $\bar\mu = \mathrm{tr}(\bar A)/D > 0$ whenever $\bar A \ne 0$, so $\widehat V > 0$; the no-excitation limit $\bar A = 0$ gives $\bar\mu = 0$ and $\rho^* = 0$, the unanchored (pure-leaky) degenerate case.
+Under deep stationarity $\widehat C^\Sigma \to 0$ would drive $\rho^* \to \infty$; the floor and a hard cap remove the singularity: $\widehat C^\Sigma \ge C_{\mathrm{floor}} > 0$ keeps $\rho^* = \bar\mu\widehat V/\widehat C \le \bar\mu\widehat V/C_{\mathrm{floor}}$ bounded (\texttt{anchored\_det\_pos}), and the branch selection $\widehat C = \max\{C_{\mathrm{ref}}, C_{\mathrm{resid}}, C_{\mathrm{floor}}\}$ is Lipschitz even where the active branch switches (\texttt{branch\_max\_lipschitz}), so the derivative jump at a tie cannot break the contraction. The active dimension is floored at one ($d_{\mathrm{act}} \ge 1$) and $\bar\mu = \mathrm{tr}(\bar A)/D > 0$ whenever $\bar A \ne 0$, so $\widehat V > 0$; the no-excitation limit $\bar A = 0$ gives $\bar\mu = 0$ and $\rho^* = 0$, the unanchored (pure-leaky) degenerate case.
 The \emph{legacy parameter-unit} form uses $\widehat V = \widehat\sigma^2\,\mathrm{tr}(\bar A^{-1})/n$ and $C_{\mathrm{resid}} = E_t\,\mathrm{tr}(\bar A^{-1})/(n\bar\mu)$; the trace scales with the effective condition number rather than with $d_{\mathrm{act}}$, so it inflates on ill-conditioned spectra and is reported only as the ablation of Online Appendix~\ref{app:protocol}.
 Overestimating the conflict is safe by Proposition~\ref{prop:minimax}.
 \end{remark}
@@ -435,7 +435,7 @@ Freedman's inequality for sub-exponential martingale differences \citep{freedman
 \]
 so the threshold $\tau(\delta) = bL + \sqrt{b^2L^2 + 2VL}$ with $L = \log(T/\delta)$ solves $\tau^2 = 2(V + b\tau)L$ and gives $\Pr[Z_t > \tau(\delta)] \le e^{-L} = \delta/T$.
 A union bound over the $T$ time points upgrades this to the sliding (time-uniform) statement $\Pr[\exists\, t \le T: Z_t > \tau(\delta)] \le T \cdot \delta/T = \delta$.
-The statistic is the implemented one, with effective sample size $m_{\mathrm{eff}} = (2-\eta_f)/\eta_f \to 1/\eta_f$ for small $\eta_f$, the runtime constant; no disjoint-window surrogate is used.
+The statistic is the implemented one, with effective sample size $m_{\mathrm{eff}} = (2-\eta_f)/\eta_f \to 1/\eta_f$ for small $\eta_f$, the runtime constant.
 The damage of a false escalation is bounded by the cost of running at reduced anchor strength for the escalation holdout: at most $O(v)$ per step for $O(1/\eta_f)$ steps, so with $\delta = 1/T^2$ the total expected false-escalation damage is $o(1)$.
 The alternative (drift) is detected with lag $O(h_f + 1/\eta_f)$, where $h_f$ is the fast moving-average horizon.
 \end{proof}
@@ -446,7 +446,7 @@ The variance-floor subtraction is itself a strictly positive threshold: the drif
 Applying the bound of Proposition~\ref{prop:falsealarm} at $\tau=\min(\tau_\omega,\tau_\rho)>0$ gives $\Pr[\omega_t>\omega_{\min}]\le\delta$ for the sliding test under stationarity, upgrading Theorem~\ref{thm:window}'s in-expectation statement to a high-probability pinning guarantee; the bound applies to the implemented EMA directly (Proposition~\ref{prop:falsealarm}).
 
 \begin{remark}[Time uniformity]
-The union bound over time points makes the guarantee uniform over the whole stream, so no disjoint-window or e-process surrogate is needed; the cost is the $\log T$ factor in $\tau(\delta)$.
+The union bound over time points makes the guarantee uniform over the whole stream; the cost is the $\log T$ factor in $\tau(\delta)$.
 The measured rate is at or below the nominal level at $\delta = 0.10$ and $0.05$, with a slight exceedance at $\delta = 0.01$ on ill-conditioned spectra (Online Appendix~\ref{app:protocol}).
 \end{remark}
 
@@ -499,8 +499,8 @@ Online projected gradient descent on convex losses against an adaptive adversary
   \;\le\; G_b\sqrt{2DT}
 \]
 with the stated step size \citep{zinkevich2003}; no probabilistic assumption is used.
-The comparison class contains the pure-data profile $\mathbf 0$, the pure-anchor profile $\mathbf 1$, and every fixed scalar-$\rho$ profile $s_\rho$, since all lie in the box; in physical coordinates it is the realized operator sequence $\{U_t\operatorname{diag}(s)U_t^\top\}$, whose basis-invariant sub-class is the isotropic family $\{cI\}$ (constant $s \equiv c$; \texttt{conj\_const\_diagonal}), containing $\mathbf 0$, $\mathbf 1$, and every fixed isotropic ridge. The sublinear rate is confirmed by the diagnostic OGD runs (\texttt{results/regret\_scaling.csv}) and the $\sqrt D$ premium by the dimension sweep (\texttt{results/regret\_dscaling.csv}).
-The bound is external regret against the realized loss sequence: the anchor's state makes a comparator's counterfactual anchor trajectory differ from the realized one, and policy regret is not claimed.
+The comparison class contains the pure-data profile $\mathbf 0$, the pure-anchor profile $\mathbf 1$, and every fixed scalar-$\rho$ profile $s_\rho$, since all lie in the box; in physical coordinates it is the realized operator sequence $\{U_t\operatorname{diag}(s)U_t^\top\}$, whose basis-invariant sub-class is the isotropic family $\{cI\}$ (constant $s \equiv c$; \texttt{conj\_const\_diagonal}), containing $\mathbf 0$, $\mathbf 1$, and every fixed isotropic ridge. The sublinear rate is confirmed by the diagnostic OGD runs and the $\sqrt D$ premium by the dimension sweep.
+The bound is external regret against the realized loss sequence: the anchor's state makes a comparator's counterfactual anchor trajectory differ from the realized one.
 \end{proof}
 
 \begin{remark}[Formalized chain]
@@ -638,7 +638,7 @@ Per population eigenvalue the retention and the pull sum to one, so $\kappa_1 \t
 Substituting \eqref{eq:rmt-kappa} gives $q = \ln(1 + \zeta \theta_1)/\zeta$, hence $e^{\zeta q} = 1 + \zeta \theta_1$.
 Therefore $\kappa_1 = \zeta q/(e^{\zeta q} - 1)$ and
 $\rho_{\mathrm{eff}} = \rho/\kappa_1 = \rho (e^{\zeta q} - 1)/(\zeta q)$.
-The collapse identities are formalized as \texttt{de\_log\_identity} and \texttt{de\_collapse} in \texttt{Core.lean}; the probabilistic convergence of the deterministic equivalent remains pen-and-paper.
+The collapse identity is formalized as \texttt{de\_collapse} in \texttt{Core.lean}; the probabilistic convergence of the deterministic equivalent remains pen-and-paper.
 Existence and uniqueness in $(0,1)$: the right side of \eqref{eq:rmt-collapse} is continuous and strictly decreasing in $q$ (the growth factor $(e^{\zeta q}-1)/(\zeta q) \ge 1$ is strictly increasing, and each term $\tau/(\tau + \rho_{\mathrm{eff}})$ decreases in $\rho_{\mathrm{eff}}$), positive at $q \downarrow 0$ because $\tau_{\min} > 0$, and strictly below $1$ at $q = 1$.
 \end{proof}
 
@@ -804,8 +804,8 @@ $\Upsilon = (D K_2/\kappa_1^2)\,J = (D^+ K_2/\kappa_1^2)\,J^+ = \Upsilon^+$.
 The conflict integral in \eqref{eq:rmt-risk} carries the weight $\tau/(\tau+\rho_{\mathrm{eff}})^2$, which vanishes on the null atom, so it is unchanged as well.
 \end{proof}
 
-The corollary says a rank-deficient population is not a boundary of the theory: it is the same deterministic equivalent on the active subspace, of dimension $D^+ = pD$ and aspect ratio $\zeta^+ = p\zeta$, with the hypothesis reduced to $\tau_{\min}^+ > 0$ on the nonzero part.
-The direction-weighted conflict measure $H_\delta$ is likewise supported on $\operatorname{range}(\Sigma)$ in the prediction risk; the unweighted trace functional that ignores the $\tau$ weighting is the object that fails, not the theorem.
+On a rank-deficient population the same deterministic equivalent holds on the active subspace, of dimension $D^+ = pD$ and aspect ratio $\zeta^+ = p\zeta$, with the hypothesis reduced to $\tau_{\min}^+ > 0$ on the nonzero part.
+The direction-weighted conflict measure $H_\delta$ is likewise supported on $\operatorname{range}(\Sigma)$ in the prediction risk; the $\tau$-weighting is what carries this invariance, and the unweighted trace functional does not.
 
 \subsubsection{The coupling corollary is local}
 \label{app:rmt-coupling}
@@ -823,7 +823,7 @@ In branch (c), under the quasi-static estimator block of Theorem~\ref{thm:closed
 = \frac{2}{2-\omega}\Bigl(1 + \frac{\widehat V}{|\widehat C_{\mathrm{ref}}|}\Bigr),
 \]
 the leading coefficient plus the measurable debiasing ratio $\widehat V/|\widehat C_{\mathrm{ref}}| = \rho^*/\bar\mu$ at the fixed point, in place of an unbound $O(1/n)$.
-The measured coupling product is below $6\times10^{-3}$ across all $20$ diagnostic runs, with one quantity pinned in three of four configurations (\texttt{results/coupling\_diag.csv}).
+The measured coupling product is below $6\times10^{-3}$ across all $20$ diagnostic runs, with one quantity pinned in three of four configurations.
 The coupling product in log-coordinates is therefore at most
 \begin{equation}
 \label{eq:rmt-coupling}
@@ -847,10 +847,10 @@ The piecewise definition of $\widehat C$ preserves this: $F$ is smooth with the 
 \subsubsection{Numerical validation}
 \label{app:rmt-validation}
 
-The closed forms above were checked against direct simulation (\texttt{scripts/diagnostics.py} \texttt{--diag rmt}), separately from the proof.
+The closed forms above were checked against direct simulation, separately from the proof.
 \emph{Fixed points.}
 At $45$ operating points (three spectra $\times$ five nominal windows $1/(1-\lambda) \in \{100,\dots,2000\}$ $\times$ three anchor strengths $\rho \in \{10^{-3}, 10^{-2}, 10^{-1}\}$), \eqref{eq:rmt-collapse} matches the Monte Carlo stationary risk to within $4.4\%$ (median $1.4\%$) across all three spectra, and within $2.3\%$ on the rank-deficient spectrum.
-The rank-deficient grid is recorded in \texttt{results/rmt\_rankdef.csv}, which also verifies the active-subspace invariance of Corollary~\ref{cor:rmt-active}: the full-spectrum and reduced-system functionals agree to machine precision ($|\Upsilon-\Upsilon^+| = 0$ at every point).
+The rank-deficient grid also verifies the active-subspace invariance of Corollary~\ref{cor:rmt-active}: the full-spectrum and reduced-system functionals agree to machine precision ($|\Upsilon-\Upsilon^+| = 0$ at every point).
 \emph{Sensitivities.}
 Equation~\eqref{eq:rmt-sensitivity} agrees with numerical differentiation of the fixed point to $10^{-6}$ relative error across all nine spectrum--operating-point combinations.
 \emph{Conflict increment.}
@@ -859,9 +859,9 @@ The random-orientation rank-deficient case is covered by Corollary~\ref{cor:rmt-
 \emph{Operating points.}
 At the method's own converged control pair the deterministic equivalent matches the arm's Monte Carlo risk to within $9.8\%$ (isotropic), $12.7\%$ (decay3), and $1.9\%$ (rank-deficient).
 \emph{Finite-$D$ concentration.}
-Scoring the risk with the population covariance, the out-of-sample quantity Theorem~\ref{thm:rmt} is stated for, the relative discrepancy $|R_{\mathrm{MC}}-R_{\mathrm{DE}}|/R_{\mathrm{DE}}$ at fixed $\zeta$ is within the Monte Carlo standard error at every $D \in \{64,128,256,512\}$ over $\zeta \in \{1,2\}$ and $\rho \in \{10^{-2},10^{-1}\}$: for $D \ge 128$ the maximum relative bias is $1.1\%$ and the median $|\text{bias}|/\text{s.e.}$ is $0.66$, with no systematic growth in $D$, consistent with an $O(1/D)$ deterministic-equivalent error (\texttt{py scripts/finite\_d\_conc.py}; \texttt{results/finite\_d\_conc.csv}).
+Scoring the risk with the population covariance, the out-of-sample quantity Theorem~\ref{thm:rmt} is stated for, the relative discrepancy $|R_{\mathrm{MC}}-R_{\mathrm{DE}}|/R_{\mathrm{DE}}$ at fixed $\zeta$ is within the Monte Carlo standard error at every $D \in \{64,128,256,512\}$ over $\zeta \in \{1,2\}$ and $\rho \in \{10^{-2},10^{-1}\}$: for $D \ge 128$ the maximum relative bias is $1.1\%$ and the median $|\text{bias}|/\text{s.e.}$ is $0.66$, with no systematic growth in $D$, consistent with an $O(1/D)$ deterministic-equivalent error.
 The fixed-point grid above scores the risk with the in-sample empirical covariance, which adds an $O(D/T)$ in-sample term ($\approx 1.3\%$ at $D=128$, $T=10^4$) on top of this finite-$D$ error.
-The CSV files \texttt{results/rmt\_grid.csv}, \texttt{results/rmt\_verify.csv}, \texttt{results/rmt\_conflict.csv}, and \texttt{results/rmt\_rankdef.csv} record the grids; all rows, full-rank and rank-deficient, support the theorem.
+All rows of the diagnostic grids, full-rank and rank-deficient, support the theorem.
 
 The convergence step is cited \citep{silverstein1995,rubio2011,hachem2007}; the nearest prior analysis is the large-system exponentially windowed RLS study of \citet{xiao2005}, without anchoring, per-direction pulls, refresh, or self-calibrating estimators, and the unweighted-batch ridge asymptotics \citep{hastie2022,pafka2004} do not carry the finite-window renormalization.
 
@@ -894,7 +894,7 @@ When the detector's drift-active floor pins $\rho$, $e_\rho \equiv 0$ and the wi
 The complementary one-way case (the strength target insensitive to the window) is the triangular specialization \texttt{joint\_geometric\_triangular}.
 
 \emph{Part (iii): the fluctuation bound.}
-The contracted recursion of part (i) is the scalar Lyapunov inequality whose stationary second moment is bounded in Proposition~\ref{prop:fluct}; the same weighted max-norm $V = \max\{|e_\omega|, r|e_\rho|\}$ bounds the cross moment, $|\E[e_\omega e_\rho]| \le \E[V^2]/r \le q_*/(r(1-\gamma_{\mathrm{cl}})^2)$ (\texttt{weighted\_cross\_le}), so the full stationary second-moment matrix, including its off-diagonal cross-covariance, is controlled entrywise by the scalar bound. The \emph{Loewner-order} matrix least-squares route is what is deliberately not claimed, because entrywise domination of nonnegative error vectors does not lift to the Loewner order (a nonnegative triangle-inequality remainder also cannot be a zero-mean martingale difference); the weighted-norm route gives the entrywise bounds, which is what part (iii) needs.
+The contracted recursion of part (i) is the scalar Lyapunov inequality whose stationary second moment is bounded in Proposition~\ref{prop:fluct}; the same weighted max-norm $V = \max\{|e_\omega|, r|e_\rho|\}$ bounds the cross moment, $|\E[e_\omega e_\rho]| \le \E[V^2]/r \le q_*/(r(1-\gamma_{\mathrm{cl}})^2)$, so the full stationary second-moment matrix, including its off-diagonal cross-covariance, is controlled entrywise by the scalar bound. The weighted max-norm route gives the entrywise bounds that part (iii) requires; entrywise domination of nonnegative error vectors is exactly the form the cross-moment bound uses.
 
 \begin{proposition}[Invariant measure in the co-moving frame]
 \label{prop:ergodic}
@@ -904,7 +904,7 @@ Work in the co-moving frame $\tilde B_t := B_t - A_t w^*_t$ and $\tilde G_t := G
 \item[(i)] $\Phi_m$ is a Feller Markov chain on the product of the compact parameter box with the trace-bounded (tight) accumulator set, and admits an invariant probability measure $\pi$.
 \item[(ii)] \sloppy If the mean-field estimator map of Theorem~\ref{thm:closedloop} is contracting ($\gamma_{\mathrm{cl}}<1$) and the full state-to-estimator Jacobian satisfies the small-gain condition $\varrho(J_{\mathrm{state}\to\mathrm{estimator}})\,\varrho(J_{\mathrm{estimator}\to\mathrm{state}}) < 1-\gamma_{\mathrm{cl}}$, then $\pi$ is unique and $\Phi_m$ is geometrically ergodic in $W_1$.
 \end{enumerate}
-No pathwise synchronous-coupling claim is made: when the two copies' estimators differ, the accumulator difference carries the cross term $-(\omega^{(1)}-\omega^{(2)})A^{(2)}$, which the small-gain condition controls.
+The small-gain condition controls the coupling directly: when the two copies' estimators differ, the accumulator difference carries the cross term $-(\omega^{(1)}-\omega^{(2)})A^{(2)}$, which the condition bounds.
 \end{proposition}
 \begin{proof}
 (i) The co-moving frame removes the linear growth: $A_t$ is tight by the Foster--Lyapunov drift $\E[A_{t+1}\mid\mathcal F_t]\preceq(1-\omega_{\min})A_t+\bar\Sigma$, the centered statistics $\tilde B_t,\tilde G_t$ are bounded through the pull interpolation, and the estimators live in a compact box by construction.
@@ -912,7 +912,7 @@ The one-step kernel is $k$-periodic because the anchor refresh and estimator upd
 The hard gate $\mathbf 1\{E_t>0\}$ does not break the Feller property: when $\varepsilon_t$ has a continuous density (Gaussian or bounded with a density), the boundary event $\{E_t=0\}$ has conditional probability zero, so the transition expectation of any bounded continuous function is continuous in the state; no artificial smoothing of the gate is needed.
 Tightness plus this Feller property yields an invariant probability measure \citep{meyn2009}.
 (ii) Linearizing the joint error dynamics around the invariant set gives the feedback system state $\to$ estimator $\to$ state. The small-gain condition makes its spectral radius strictly below one in a weighted norm, and combined with the Foster--Lyapunov drift and the support condition this gives geometric ergodicity and uniqueness \citep[Ch.~18]{meyn2009}.
-Without the small-gain condition, uniqueness is not claimed for the full process; the idealized mean-field estimator process of Theorem~\ref{thm:closedloop} is unique under $\gamma_{\mathrm{cl}}<1$.
+Uniqueness of the full process requires the small-gain condition; the idealized mean-field estimator process of Theorem~\ref{thm:closedloop} is unique under $\gamma_{\mathrm{cl}}<1$.
 \end{proof}
 
 \begin{proposition}[Fluctuation bound]
@@ -938,7 +938,7 @@ The deterministic coupled stationary law is the unique fixed point of the compos
 \]
 a contraction with modulus the coupling product $L_{\omega\rho}L_{\rho\omega} < 1$; hence $\Phi$ has a unique fixed point, reached from any start by the iteration $\rho_{m+1} = \Phi(\rho_m)$, and the law admits the convergent telescoping series $\rho^* = \rho_0 + \sum_{m\ge0}(\rho_{m+1}-\rho_m)$ with geometric remainder $O((L_{\omega\rho}L_{\rho\omega})^m)$.
 No single elementary closed form is available: $\Phi$ composes a cube root of the rational $d_{\mathrm{eff}}(\rho)$ with the rational strength map, so the fixed-point equation is transcendental and the convergent series is the closed-form handle.
-The stochastic stationary law's mean is this fixed point and its second moment is bounded by $q_*/(1-\gamma_{\mathrm{cl}})^2$ (Proposition~\ref{prop:fluct}); the moment recursion is the exact form available, and no closed-form density is claimed because the innovation $\xi$ is state dependent.
+The stochastic stationary law's mean is this fixed point and its second moment is bounded by $q_*/(1-\gamma_{\mathrm{cl}})^2$ (Proposition~\ref{prop:fluct}); the state-dependent innovation $\xi$ makes the density non-elementary, so the moment recursion is the exact form available.
 
 \subsection{Spectral Invariance of the Scalar Method}
 \label{app:invariance}
@@ -1079,18 +1079,18 @@ Proposition~\ref{prop:ocowrap}(i) & Zinkevich step (adaptive losses); basis-inva
 Proposition~\ref{prop:ocowrap}(ii) & quadratic exponential bound & \texttt{exp\_neg\_le\_one\_sub\_add\_sq} & Hedge.lean \\
  & potential step, ratio, and product bounds & \texttt{Zfun\_step}, \texttt{Zfun\_step\_bound}, \texttt{Zfun\_prod\_bound} & Hedge.lean \\
  & Hedge regret & \texttt{hedge\_regret} & Hedge.lean \\
-Proposition~\ref{prop:windup} & eigenvalue interval bound; pull weights & \texttt{windup\_ratio\_le}, \texttt{pull\_weight\_bounds} & Core.lean \\
-Theorem~\ref{thm:closedloop} & joint $2\times2$ contraction; geometric decay; tracking radius; drift-mode, one-way, and pinned-estimator (free-rate) specializations & \texttt{joint\_step}, \texttt{joint\_geometric}, \texttt{joint\_tracking}, \texttt{joint\_bounds}, \texttt{joint\_weight\_lo}, \texttt{joint\_weight\_hi}, \texttt{joint\_rate\_lt\_one}, \texttt{joint\_geometric\_drift\_mode}, \texttt{joint\_geometric\_triangular}, \texttt{joint\_geometric\_pinned}, \texttt{smooth\_dim\_lipschitz}, \texttt{weighted\_cross\_le}, \texttt{branch\_max\_lipschitz}, \texttt{strength\_floor\_pos}, \texttt{strength\_floor\_bound} & Coupled.lean, Core.lean \\
+Proposition~\ref{prop:windup} & matrix pull identity; anchored resolvent; floor nonsingularity; effective-dimension trace & \texttt{pull\_matrix\_sum\_one}, \texttt{diagonal\_resolvent}, \texttt{anchored\_det\_pos}, \texttt{resolvent\_trace\_effdim} & Core.lean \\
+Theorem~\ref{thm:closedloop} & joint $2\times2$ contraction; geometric decay; tracking radius; drift-mode, one-way, and pinned-estimator (free-rate) specializations & \texttt{joint\_step}, \texttt{joint\_geometric}, \texttt{joint\_tracking}, \texttt{joint\_bounds}, \texttt{joint\_weight\_lo}, \texttt{joint\_weight\_hi}, \texttt{joint\_rate\_lt\_one}, \texttt{joint\_geometric\_drift\_mode}, \texttt{joint\_geometric\_triangular}, \texttt{joint\_geometric\_pinned}, \texttt{smooth\_dim\_lipschitz}, \texttt{branch\_max\_lipschitz} & Coupled.lean, Core.lean \\
 Propositions~\ref{prop:ergodic},~\ref{prop:fluct} & invariant measure; second-moment (Lyapunov) bound & --- (pen-and-paper, \citealp{meyn2009}) & --- \\
 \midrule
 Corollary~\ref{cor:mixed} & mixed-drift master law & --- (pen-and-paper, Appendix~\ref{app:proofs}) & --- \\
-Theorem~\ref{thm:rmt} & spectral retention and streaming risk; collapse/renormalization identities & \texttt{de\_log\_identity}, \texttt{de\_collapse} (convergence pen-and-paper) & Core.lean \\
+Theorem~\ref{thm:rmt} & spectral retention and streaming risk; collapse/renormalization identities & \texttt{de\_collapse} (convergence pen-and-paper) & Core.lean \\
 Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{cor:app-anchor-excites} & exact MAP; excitation/rank; anchoring removes the excitation requirement & --- (pen-and-paper, Appendix~\ref{app:support}) & --- \\
 \end{longtable}}
 
 \subsection{Coverage and Formalization Boundary}
-The artifact contains 87 theorem and lemma declarations, all proved: 44 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
-The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the basis-invariant comparator lemma, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the conditioning bound, the smooth effective-dimension Lipschitz bound, the weighted cross-covariance bound, the degeneracy-floor and branch-continuity lemmas, the deterministic-equivalent collapse, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
+The artifact contains 85 theorem and lemma declarations, all proved: 42 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.
+The formalized chain covers the pull identity, the eigenbasis decoupling, the risk-interpolation and calibration identities, the minimax core, the lag-invariance step, the finite-cadence refresh chain (rate identity, fixed point, geometric closed form, contraction, variance identities, and the lower endpoint $\Psi \ge (1-s)^2$), the moving-frame reduction and cycle-average assembly, the subgradient and box-projection steps, the Zinkevich and Hedge regret bounds, the basis-invariant comparator lemma, the window optimum and second-derivative positivity, the spectral invariance under orthogonal conjugation and the anchored-system matrix identities (pull-weight sum, resolvent, floor nonsingularity, effective-dimension trace), the smooth effective-dimension Lipschitz bound, the branch-continuity lemma, the deterministic-equivalent collapse, and the coupled contraction chain, together with the exact effective-dimension decomposition of the window coefficient.
 
 The probabilistic concentration step, the deterministic-equivalent convergence of Theorem~\ref{thm:rmt}, and the Davis--Kahan bound are pen-and-paper.
 The Lean declarations take the resulting recursions as hypotheses; Table~\ref{tab:lean-map} marks each row as formalized or pen-and-paper.
