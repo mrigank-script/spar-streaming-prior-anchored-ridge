@@ -62,8 +62,8 @@ checks.append(("per-direction rho* = sigma^2/(n delta^2)", res_rho))
 # Minimax value monotone in C (d/dC [DvC/(Dv+C)] > 0)
 val = D * v * C / (D * v + C)
 dval = sp.simplify(sp.diff(val, C))
-res_m = sp.simplify(sp.together(dval - D * v * (D * v) / (D * v + C) ** 2 * 0 - dval))
-checks.append(("minimax value derivative (expect D^2 v^2/(Dv+C)^2)", sp.simplify(dval)))
+checks.append(("minimax value derivative (expect D^2 v^2/(Dv+C)^2)",
+               sp.simplify(dval - (D * v) ** 2 / (D * v + C) ** 2)))
 
 # Lag invariance — (1-s)(-L) + s*x = x  =>  x = -L  (s != 1)
 sol_lag = sp.solve(sp.Eq((1 - s) * (-L) + s * x, x), x)
@@ -156,10 +156,10 @@ checks.append(("uncorrelated variance reduction (1-s)^2 v + s^2 q = v(1-2s(1+s-s
 
 # Window second-derivative d2/dw2 [c'w/(2-w) + nu^2/w^2] = 6 nu^2/w^4 + 4 c'/(2-w)^3
 wv, cpv = sp.symbols("wv cpv", positive=True)
-R_ex = cpv * wv / (2 - wv) + nu / wv ** 2
+R_ex = cpv * wv / (2 - wv) + nu ** 2 / wv ** 2
 checks.append(("window second-derivative expression",
                sp.simplify(sp.diff(R_ex, wv, 2)
-                           - (6 * nu / wv ** 4 + 4 * cpv / (2 - wv) ** 3))))
+                           - (6 * nu ** 2 / wv ** 4 + 4 * cpv / (2 - wv) ** 3))))
 
 # Correlated finite-cadence variance (rho = alpha^k cross-cycle noise correlation)
 rho = sp.symbols("rho", real=True)
@@ -191,9 +191,8 @@ def main() -> None:
     all_ok = True
     for name, res in checks:
         zero = sp.simplify(res) == 0
-        ok = zero or (name.startswith("minimax value derivative") and res != 0)
-        all_ok &= (sp.simplify(res) == 0) if not name.startswith("minimax value derivative") else True
-        print(f"  {name:<52} -> {res}  {'OK' if (sp.simplify(res) == 0) else ''}")
+        all_ok &= zero
+        print(f"  {name:<52} -> {res}  {'OK' if zero else 'FAIL'}")
 
     print("  W1 d2R/dw2 =", d2R, "  (positive: strict min for w>0)")
 

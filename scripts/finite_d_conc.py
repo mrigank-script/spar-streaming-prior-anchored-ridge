@@ -72,6 +72,9 @@ def mc_stats(kind, D, w, rho, n=200, T=6000):
             seed=seed, D=D, T=T, sigma=np.sqrt(SIGMA2), spectrum=kind,
             drift="none", noise="gauss")
         w_star = w_true[-1]
+        # Newest sample gets the smallest weight; the streams here are
+        # stationary (drift="none"), so the ordering does not change the
+        # estimate, but non-stationary copies must reverse the arange.
         sw = w * (1 - w) ** np.arange(T)
         Xw = x * np.sqrt(sw)[:, None]
         A = Xw.T @ Xw

@@ -81,16 +81,17 @@ def pad_score(U_ref: np.ndarray, U_t: np.ndarray, mode: str = "energy") -> float
 
 
 def pad_trigger(scores: np.ndarray, tau_max: float | None = None, tau_energy: float | None = None) -> np.ndarray:
-    """Boolean firing mask for a PAD score stream; fires on either exceeded threshold."""
+    """Boolean firing mask for a 1-D PAD score stream.
+
+    The score is one statistic, so a single effective threshold applies:
+    supplying both ``tau_max`` and ``tau_energy`` is equivalent to the
+    stricter (smaller) of the two.
+    """
     scores = np.asarray(scores, dtype=float)
-    if tau_max is None and tau_energy is None:
+    taus = [t for t in (tau_max, tau_energy) if t is not None]
+    if not taus:
         raise ValueError("set at least one threshold")
-    fire = np.zeros(scores.shape, dtype=bool)
-    if tau_max is not None:
-        fire |= scores > tau_max
-    if tau_energy is not None:
-        fire |= scores > tau_energy
-    return fire
+    return scores > min(taus)
 
 
 def recovery_time(signal: np.ndarray, drift_index: int, baseline: float | None = None,

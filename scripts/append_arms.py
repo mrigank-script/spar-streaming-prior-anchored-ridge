@@ -135,11 +135,9 @@ ARMS = [
     # stream arms (per-drift grid files on the main suite, extras otherwise)
     # headline prediction-unit arm (SPAR-Pull); `spar_kf2` is
     # kept only as the legacy parameter-unit ablation.
-    _simple("spar_pull", "split", "main+extra", True,
-            lambda x, y, w, g: run_spar_kf(
-                x, y, w, G_init=g, refresh_every=10, resid_fast=30,
-                rho_drift_floor=0.02, debias_variance_floor=True,
-                prediction_units=True)[0]),
+    _arm("spar_pull", "split", "main+extra", True,
+         lambda x, y, T_warm, G_init, ctx: [
+             ("spar_pull", ctx["kf_preds"](x, y, T_warm, G_init))]),
     _simple("spar_kf2", "split", "main+extra", True,
             lambda x, y, w, g: run_spar_kf(
                 x, y, w, G_init=g, refresh_every=10, resid_fast=30,
@@ -324,12 +322,13 @@ def main() -> None:
         ctx = {"t1": t1, "kf_preds": _kf_preds_cache()}
         rows = []
         for arm in arms:
+            t_arm = time.perf_counter()
             for name, preds in arm["runner"](x, y, args.T_warm, G_init,
                                              ctx):
                 row = {"spectrum": spectrum, "drift": drift,
                        "prior": prior, "noise": noise, "seed": seed,
                        "method": name, "D": args.D, "T": args.T,
-                       "wall_s": time.perf_counter() - t0}
+                       "wall_s": time.perf_counter() - t_arm}
                 for reg_name, reg in regs.items():
                     row[f"mse_{reg_name}"] = float(
                         np.mean((preds[reg] - y_te[reg]) ** 2)) \

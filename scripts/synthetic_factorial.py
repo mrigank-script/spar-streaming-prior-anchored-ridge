@@ -249,7 +249,7 @@ def main() -> None:
                 row["mse_overall"] = float(np.mean((preds - y_te) ** 2))
                 if drift in ("abrupt", "both"):
                     row["recovery"] = recovery_time(
-                        preds, y_te, t1p, row.get("mse_pre", pre_ref))
+                        preds, y_te, t1p, pre_ref)
                 else:
                     row["recovery"] = float("nan")
                 row["diverged"] = bool(row["mse_overall"] > 1e3

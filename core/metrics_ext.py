@@ -8,7 +8,7 @@
   (streaming telemetry).
 - certified_conditioning: condition-number certificate from the SV-shift lemma
   plus the deployment margin (runtime check that spectral anchoring is correct).
-- backward_alignment_score: block-diagonal compressibility of gradient
+- block_alignment_score: block-diagonal compressibility of gradient
   second-moments (predicts the ceiling of no-backprop local readouts).
 """
 
@@ -47,12 +47,9 @@ def anchor_reliance(A, B, n, gamma: float, ridge: float, G):
 
 
 def _padded_polar(B):
-    """Polar factor from the full SVD: lifts all min(D,K) singular values."""
-    D, K = B.shape
-    U, _, Vh = np.linalg.svd(B, full_matrices=True)
-    if D >= K:
-        return U[:, :K] @ Vh[:K, :]
-    return U @ Vh[:D, :]
+    """Polar factor from the reduced SVD: lifts all min(D,K) singular values."""
+    U, _, Vh = np.linalg.svd(B, full_matrices=False)
+    return U @ Vh
 
 
 def certified_conditioning(B, gamma: float, mode: str = "padded"):
@@ -83,7 +80,7 @@ def certified_conditioning(B, gamma: float, mode: str = "padded"):
     }
 
 
-def backward_alignment_score(G, block: int = 64):
+def block_alignment_score(G, block: int = 64):
     """BAS = 1 - ||G - BD(G)||_F / ||G||_F for a (D, D) gradient second-moment.
 
     Measures how much of the gradient structure is block-local; high BAS

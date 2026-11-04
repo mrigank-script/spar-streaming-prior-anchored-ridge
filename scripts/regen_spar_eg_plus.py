@@ -3,9 +3,9 @@
 The legacy appended-grid driver cached the parameter-unit (`spar_kf2`)
 trajectory for the SPAR-EG+ pool.  This script recomputes both rows with
 `prediction_units=True` for every main-grid and stress key and writes them
-to `results/factorial_pu_refresh.csv`.  Merging that file last into
-`factorial_extras.csv` makes the prediction-unit rows authoritative for
-`aggregate_factorial.py` (which keeps the last duplicate).
+to `results/factorial_pu_refresh.csv`.  `aggregate_factorial.py` loads that
+file last and keeps the last duplicate, so the prediction-unit rows are
+authoritative.
 
 Usage:
   py scripts/regen_spar_eg_plus.py --workers 6
@@ -48,9 +48,10 @@ def run_one(task):
         prediction_units=True, return_diag=True)
     rows = [_row(meta("spar_pull"), preds, y_te, regs, t1p,
                  time.perf_counter() - t0)]
+    t_eg = time.perf_counter()
     preds_egp = run_spar_eg(x, y, T_WARM, G_init=G, extra_preds=preds)
     rows.append(_row(meta("spar_eg_plus"), preds_egp, y_te, regs, t1p,
-                     time.perf_counter() - t0))
+                     time.perf_counter() - t_eg))
     return rows
 
 
@@ -71,9 +72,11 @@ def main() -> None:
     if args.limit:
         tasks = tasks[:args.limit]
 
+    out = OUT if not args.limit else OUT.with_name(
+        "factorial_pu_refresh_limit.csv")
     print(f"pending={len(tasks)} workers={args.workers}", flush=True)
-    if OUT.exists():
-        OUT.unlink()
+    if out.exists():
+        out.unlink()
     t0 = time.perf_counter()
     done = 0
     with ProcessPoolExecutor(max_workers=args.workers) as ex:
@@ -81,19 +84,19 @@ def main() -> None:
         for fut in as_completed(futs):
             rows = fut.result()
             pd.DataFrame(rows).reindex(columns=GRID_COLS).to_csv(
-                OUT, mode="a", header=not OUT.exists(), index=False)
+                out, mode="a", header=not out.exists(), index=False)
             done += 1
             if done % 10 == 0 or done == len(tasks):
                 print(f"[{done}/{len(tasks)}] {time.perf_counter()-t0:.0f}s",
                       flush=True)
-    df = pd.read_csv(OUT)
+    df = pd.read_csv(out)
     main = df[df.drift.isin(["abrupt", "both", "covrot"])
               & (df.noise == "gauss")]
     for m, g in df.groupby("method"):
         x = g.mse_overall.to_numpy()
         print(f"{m:14s} all n={len(x)} mean={x.mean():.4f} "
               f"worst={x.max():.4f}")
-    print(f"wrote {OUT}")
+    print(f"wrote {out}")
 
 
 if __name__ == "__main__":

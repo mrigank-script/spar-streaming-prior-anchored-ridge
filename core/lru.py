@@ -26,16 +26,16 @@ def lru_forward(x_sequence: Array, lambda_diag: Array, B: Array, return_complex:
     once via a binary reduction tree (10 steps for L=1024, not 1024)."""
     L = x_sequence.shape[0]
 
-    B32 = B.astype(jnp.float32)
-    x32 = x_sequence.astype(jnp.float32)
+    B32 = B.astype(jnp.float64)
+    x32 = x_sequence.astype(jnp.float64)
     if x32.ndim == 1:
         x32 = x32[:, None]
     if B32.ndim == 1:
-        B32 = B32[:, None]
+        B32 = B32[None, :]
 
-    h_init = jnp.einsum("di,li->ld", B32, x32).astype(jnp.complex64)
+    h_init = jnp.einsum("di,li->ld", B32, x32).astype(jnp.complex128)
 
-    lambda_c64 = lambda_diag.astype(jnp.complex64)
+    lambda_c64 = lambda_diag.astype(jnp.complex128)
     lambdas = jnp.broadcast_to(lambda_c64[None, :], (L, lambda_c64.shape[0]))
     lambdas = jnp.array(lambdas)
 
@@ -58,7 +58,8 @@ def init_lru_params(key: Array, D: int, D_in: int, r_min: float = 0.9, r_max: fl
     phi = jax.random.uniform(key_phi, (D,), minval=0.0, maxval=2.0 * jnp.pi)
 
     lambda_diag = r * jnp.exp(1j * phi)
-    B = jax.random.normal(key_B, (D, D_in)) / jnp.sqrt(float(D_in))
+    B = (jax.random.normal(key_B, (D, D_in)) / jnp.sqrt(float(D_in))
+         * jnp.sqrt(1.0 - r ** 2)[:, None])
 
     return {"lambda_diag": lambda_diag, "B": B}
 

@@ -48,8 +48,8 @@ def _fft(window, bins):
 
 def lru_last_state(window, lambda_diag, B):
     """Complex last hidden state of the fixed LRU reservoir over a (L, C) window."""
-    h_init = jnp.einsum("di,li->ld", B.astype(jnp.float32), window.astype(jnp.float32)).astype(jnp.complex64)
-    lambdas = jnp.broadcast_to(lambda_diag.astype(jnp.complex64)[None, :], h_init.shape)
+    h_init = jnp.einsum("di,li->ld", B.astype(jnp.float64), window.astype(jnp.float64)).astype(jnp.complex128)
+    lambdas = jnp.broadcast_to(lambda_diag.astype(jnp.complex128)[None, :], h_init.shape)
     h_all, _ = jax.lax.associative_scan(lru_combine, (h_init, lambdas), axis=0)
     return h_all[-1]
 
@@ -64,6 +64,10 @@ def build_features(window, cfg: FeatureConfig, lru_params=None):
         )
         blocks.append(_lags(window, cfg.lags))
     if cfg.fft_bins > 0:
+        assert cfg.fft_bins <= window.shape[0] // 2, (
+            f"fft_bins {cfg.fft_bins} must be <= window length // 2 "
+            f"({window.shape[0] // 2})"
+        )
         blocks.append(_fft(window, cfg.fft_bins))
     if cfg.lru_modes > 0:
         state = lru_last_state(window, lru_params["lambda_diag"], lru_params["B"])

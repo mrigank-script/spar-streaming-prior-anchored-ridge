@@ -1,12 +1,12 @@
 """Driver contract: the run_all step list and the quick
-expansion are frozen (12 steps; quick = verify + aggregate + figures)."""
+expansion are frozen (13 steps; quick = verify + aggregate + figures)."""
 
 EXPECTED_STEPS = ["verify", "factorial", "sparkf", "append", "aggregate",
-                  "ablation", "falseesc", "regret", "ops", "eeg", "bp",
-                  "figures"]
+                  "ablation", "falseesc", "regret", "extra", "ops", "eeg",
+                  "bp", "figures"]
 
 
-def test_step_list_is_expected_12():
+def test_step_list_is_expected_13():
     from scripts import run_all
 
     assert run_all.STEPS == EXPECTED_STEPS

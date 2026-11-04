@@ -15,7 +15,7 @@ def make_stream_fac(seed=0, D=128, T=10000, sigma=0.1,
     """Multi-factor three-phase stream with optional model mismatch.
 
     mismatch: none | nonlinear (y = tanh(x·w) + ε, linear head misspecified)
-              | covshift (feature covariance doubles mid-stream)
+              | covshift (feature scale doubles mid-stream; covariance x4)
               | hetnoise (observation-noise variance 0.01 -> 0.05 from t1)
     """
     rng = np.random.default_rng(seed)

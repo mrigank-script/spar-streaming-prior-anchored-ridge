@@ -16,7 +16,7 @@ def ia_regularise(
     G: Array | None = None,
     gamma: float = 0.01,
     lambda_reg: float = 0.01,
-    use_transpose: bool = True,
+    use_transpose: bool = False,
     use_spectral: bool = False,
     use_exact_map: bool = False,
 ) -> tuple[Array, Array]:
@@ -105,6 +105,8 @@ class AffineInputStitcher:
             self.Sigma_ref = np.asarray(Sigma_ref, dtype=np.float32)
         else:
             self.Sigma_ref = np.eye(self.num_channels, dtype=np.float32)
+        self.Sigma_ref = (self.Sigma_ref
+                          + self.reg_eps * np.eye(self.num_channels, dtype=np.float32))
 
     def fit_from_calibration(
         self,
@@ -123,6 +125,7 @@ class AffineInputStitcher:
         self.mu_cal = np.mean(X_cal, axis=0)
 
         if X_ref is not None:
+            X_ref = np.asarray(X_ref, dtype=np.float32)
             self.mu_ref = np.mean(X_ref, axis=0)
             X_ref_c = X_ref - self.mu_ref
             self.Sigma_ref = (X_ref_c.T @ X_ref_c) / len(X_ref) + self.reg_eps * np.eye(C)

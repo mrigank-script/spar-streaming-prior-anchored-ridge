@@ -43,6 +43,7 @@ def append_arm(tag, combos, seeds=5, D=128, T=10000, T_warm=2000):
         for seed in range(seeds):
             if (spectrum, drift, prior, noise, seed) in done:
                 continue
+            t_arm = time.perf_counter()
             x, y, w_true, t1, t2, Q0, lam0 = make_stream_fac(
                 seed=seed, D=D, T=T, sigma=0.1, spectrum=spectrum,
                 drift=drift, noise=noise)
@@ -56,7 +57,7 @@ def append_arm(tag, combos, seeds=5, D=128, T=10000, T_warm=2000):
             row = {"spectrum": spectrum, "drift": drift, "prior": prior,
                    "noise": noise, "seed": seed, "method": "spar_kf",
                    "D": D, "T": T,
-                   "wall_s": time.perf_counter() - t0}
+                   "wall_s": time.perf_counter() - t_arm}
             for reg_name, reg in regs.items():
                 row[f"mse_{reg_name}"] = float(
                     np.mean((preds[reg] - y_te[reg]) ** 2)) \

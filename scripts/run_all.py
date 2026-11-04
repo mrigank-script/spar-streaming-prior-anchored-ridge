@@ -72,6 +72,8 @@ def run(cmd, label, env=None):
     dt = time.perf_counter() - t0
     status = "OK" if proc.returncode == 0 else f"FAILED ({proc.returncode})"
     print(f"=== [{label}] {status} in {dt:.0f}s ===", flush=True)
+    if proc.returncode != 0:
+        sys.exit(proc.returncode)
     return proc.returncode
 
 

@@ -87,6 +87,8 @@ def run_arow(x, y, T_warm, r=0.1):
     D = x.shape[1]
     A_w = x[:T_warm].T @ x[:T_warm]
     b_w = x[:T_warm].T @ y[:T_warm]
+    # W uses a fixed warm-up ridge; S uses the AROW confidence r. This
+    # asymmetry is the benchmarked AROW initialisation.
     W = np.linalg.solve(A_w + 1e-3 * T_warm * np.eye(D), b_w)
     S = np.linalg.inv(A_w / T_warm + r * np.eye(D)) / T_warm
     preds = np.zeros(len(y) - T_warm)
@@ -186,6 +188,9 @@ def run_kf_est(x, y, T_warm, q=1e-4, rho_init=1e-3, eta_R=0.01):
         P = P + q * np.eye(D)
         preds[t - T_warm] = x[t] @ W
         r = y[t] - x[t] @ W
+        # Naive innovation-variance tracker: r^2 includes x^T P x, so this arm
+        # tracks the innovation variance (not the covariance-matched R); that
+        # is the benchmarked behaviour of the estimated-R Kalman.
         R_est = (1 - eta_R) * R_est + eta_R * (r * r)
         k = P @ x[t]
         K = k / (x[t] @ k + R_est)

@@ -27,7 +27,7 @@ from core import features
 from core.metrics_ext import (
     anchor_reliance,
     aroa,
-    backward_alignment_score,
+    block_alignment_score,
     certified_conditioning,
     drift_kinematics,
 )
@@ -213,7 +213,7 @@ def demo_bas():
         s = rng_pop.uniform(0.5, 1.5, 64)
         M = q * s
         A_pop[i * 64:(i + 1) * 64, i * 64:(i + 1) * 64] = M @ M.T
-    print(f"  population block-diagonal sanity: structure={backward_alignment_score(A_pop, block=64):.4f}")
+    print(f"  population block-diagonal sanity: structure={block_alignment_score(A_pop, block=64):.4f}")
 
     d = synthetic.load_config("d32_T10000_abrupt_s0.npz")
     values = np.concatenate([d["x"].astype(np.float64), d["y"].astype(np.float64)[:, None]], axis=1)
@@ -224,8 +224,8 @@ def demo_bas():
     A_syn = phi_tr.T @ phi_tr / len(phi_tr)
     blk = 44 if phi_tr.shape[1] % 44 == 0 else 33
     print(f"  sweep features (D={phi_tr.shape[1]}, blk={blk}): "
-          f"structure={backward_alignment_score(A_syn, block=blk):.3f} "
-          f"gradient={backward_alignment_score(G_syn, block=blk):.3f}")
+          f"structure={block_alignment_score(A_syn, block=blk):.3f} "
+          f"gradient={block_alignment_score(G_syn, block=blk):.3f}")
 
     out = load_eeg_subject(dataset="2a", subject=1)
     (X_tr, y_tr), _ = out["train"], out["stream"]
@@ -237,8 +237,8 @@ def demo_bas():
     G_eeg = _mlp_grad_cov(Fz[:200], y_tr[:200], seed=3)
     A_eeg = Fz.T @ Fz / len(Fz)
     print(f"  EEG cov features (D={Fz.shape[1]}->256, blk=64): "
-          f"structure={backward_alignment_score(A_eeg, block=64):.3f} "
-          f"gradient={backward_alignment_score(G_eeg, block=64):.3f}")
+          f"structure={block_alignment_score(A_eeg, block=64):.3f} "
+          f"gradient={block_alignment_score(G_eeg, block=64):.3f}")
 
 
 def main() -> None:

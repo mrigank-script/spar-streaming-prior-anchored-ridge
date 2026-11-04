@@ -5,7 +5,7 @@ import numpy as np
 from core.metrics_ext import (
     anchor_reliance,
     aroa,
-    backward_alignment_score,
+    block_alignment_score,
     certified_conditioning,
     drift_kinematics,
 )
@@ -46,14 +46,14 @@ def test_certified_conditioning_padded_tight_and_truncated_caught():
     assert res_bad["margin"] < -1e3
 
 
-def test_backward_alignment_score_extremes():
+def test_block_alignment_score_extremes():
     rng = np.random.default_rng(2)
     blocks = [rng.normal(size=(16, 16)) for _ in range(4)]
     G_block = np.zeros((64, 64))
     for i, b in enumerate(blocks):
         G_block[i * 16:(i + 1) * 16, i * 16:(i + 1) * 16] = b
-    assert backward_alignment_score(G_block, block=16) > 0.999
+    assert block_alignment_score(G_block, block=16) > 0.999
     G_dense = rng.normal(size=(64, 64))
-    assert backward_alignment_score(G_dense, block=16) < 0.5
+    assert block_alignment_score(G_dense, block=16) < 0.5
     off = np.ones((64, 64)) - np.kron(np.eye(4), np.ones((16, 16)))
-    assert backward_alignment_score(off, block=16) < 0.01
+    assert block_alignment_score(off, block=16) < 0.01
