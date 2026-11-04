@@ -96,7 +96,7 @@ def run_spar_v2(x, y, T_warm, rho_init=0.1, alpha=1.0, adaptive_rho=True,
                 clip_lo=1e-5, clip_hi=1.0, K_cal=10,
                 eta_C=0.15, ref_horizon=2000, resid_fast=100,
                 G_init=None, return_diag=False):
-    """SPAR v2.1 runner.
+    """SPAR scalar-rho runner.
 
     G_init: optional prior override (oracle / adversarial prior axes). None
       -> warm-up fit. The noise estimate always comes from the warm-up FIT

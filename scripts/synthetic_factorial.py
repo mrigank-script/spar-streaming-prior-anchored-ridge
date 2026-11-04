@@ -11,7 +11,7 @@ Methods (all closed-form or first-order online, all predict-then-update):
   warm, no_anchor, leaky RLS (lam sweep), directional forgetting DF
   (lam_f sweep), AROW (r sweep), Kalman (q sweep, true-noise R provided),
   SGD/Adam (lr sweep), WiSE-FT (alpha envelope, zero-shot = the prior),
-  SPAR scalar-rho (v2.1), SPAR diagonal-rho (theory-exact, NEW).
+  SPAR scalar-rho, SPAR diagonal-rho (theory-exact).
 
 Sweeps are reported per-value; the aggregator takes the per-config best
 (the tuned-baseline treatment, which favours the baselines).
@@ -136,7 +136,7 @@ def run_all_methods(x, y, t1, t2, Q0, lam0, w_true, T_warm, sigma2_true,
     out["wiseft[grid]"] = None  # handled at aggregation via cache
     wiseft_grid = wiseft_pred_cache
 
-    # SPAR arms (scalar v2.1 + diagonal)
+    # SPAR arms (scalar + diagonal)
     out["spar_scalar"] = run_spar_v2(x, y, T_warm, rho_init=0.1, alpha=0.997,
                                      adaptive_rho=True, refresh=True,
                                      G_init=G_init)[0]

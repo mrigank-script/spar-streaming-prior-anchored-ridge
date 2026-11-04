@@ -22,7 +22,7 @@ def ia_regularise(
 ) -> tuple[Array, Array]:
     """Apply IA regularisation: A_IA = A_raw + (γ+λ) I, B_IA = B_raw + γ·G (or γ·G^T / γ·Q).
 
-    Coefficient note (handoff §11.1): the exact MAP estimate under the prior
+    Coefficient note: the exact MAP estimate under the prior
     W ~ N(G, (γ+λ)^{-1} I) weights the prior mean by (γ+λ), not γ:
     W_MAP = (A + (γ+λ)I)^{-1} (B + (γ+λ) G). The default path (γ only)
     under-weights the prior mean by (γ+λ)/γ (= 2 at the 0.01/0.01 defaults) and

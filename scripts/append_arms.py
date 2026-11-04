@@ -133,7 +133,7 @@ def _simple(method, dest, universe, prior, fn):
 
 ARMS = [
     # stream arms (per-drift grid files on the main suite, extras otherwise)
-    # headline prediction-unit arm (the published SPAR-Pull); `spar_kf2` is
+    # headline prediction-unit arm (SPAR-Pull); `spar_kf2` is
     # kept only as the legacy parameter-unit ablation.
     _simple("spar_pull", "split", "main+extra", True,
             lambda x, y, w, g: run_spar_kf(

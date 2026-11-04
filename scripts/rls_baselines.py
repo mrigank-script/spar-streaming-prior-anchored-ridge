@@ -450,7 +450,7 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
     Estimator 2 (forgetting window, window-sign theorem):
         R(w) = c'*w/(2-w) + nu^2/w^2,  c' = (1-s)^2 sigma^2 D
         w* = (4 nu^2 / c')^(1/3)  (leading order; the exact variance term
-        w/(2-w) replaces the earlier sigma^2 D w with its factor-2 error)
+        carries the factor w/(2-w))
 
     debias_variance_floor=False: estimator without the variance floor
         nu2 = E_resid * w^2 / (1-w)^2
