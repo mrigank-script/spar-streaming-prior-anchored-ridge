@@ -540,7 +540,7 @@ detector timescale & two-scale residual EMA, $h_f = 30$, $h_{\mathrm{slow}} = 20
 baseline protocol & best single hyperparameter per family & SGD at $\mathrm{lr}=0.05$ diverges on all $45$ isotropic runs; the causal-$q$ Kalman selects $q=10^{-6}$ on the stationary pre-drift segment and is degenerate (Online Appendix~\ref{app:protocol}) \\
 BCI IV & 9 subjects per data set; reduced window range for the short streams; causal and transductive alignment reported separately & $0.816$ uses session-level transductive alignment; the strictly causal head reaches $0.810$ with a causal end-to-end Hedge mixture ($0.801$ for causal SPAR-Pull), against $0.811$ for causal WiSE-FT \\
 electricity & three percentile clients plus a seeded six-client random sample and a $1\to12$-step horizon sweep & the random sample confirms the transfer is not percentile-specific (SPAR-Pull within $11\%$ of the per-client oracle leaky window; SPAR-EG$^+$ within $1.6$--$2.2\%$ on two sampled clients); at $h=12$ the SPAR-Pull gap widens to $24\%$ and the Kalman is weakest; the script accepts any client indices \\
-Lean artifact & algebraic core, refresh chain, regret bounds, coupled contraction & probabilistic concentration, the moving-frame reduction, RMT convergence, and Davis--Kahan are pen-and-paper (Appendix~\ref{app:lean}) \\
+Lean artifact & algebraic core, refresh chain, regret bounds, coupled contraction & probabilistic concentration, RMT convergence, and Davis--Kahan are pen-and-paper (Appendix~\ref{app:lean}) \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -550,7 +550,7 @@ The finite-cadence refresh equilibrium is the central object: it gives the track
 The random-matrix correction extends the law to finite dimension, where the anchor is renormalized by the finite window; the correction is accurate on full-rank and rank-deficient spectra, the latter reducing exactly to the active subspace.
 The Lean artifact formalizes the algebraic core, the refresh chain, the regret bounds, and the coupled contraction.
 
-The coupled stationary law is the unique fixed point of the composition of the two target maps, a contraction at the coupling rate $L_{\omega\rho}L_{\rho\omega}<1$; it is given by the convergent fixed-point series $\rho^*=\sum_m(\rho_{m+1}-\rho_m)$, and no single elementary closed form is available because the defining equation is transcendental.
+The coupled stationary law is the unique fixed point of the composition of the two target maps, a contraction at the coupling rate $L_{\omega\rho}L_{\rho\omega}<1$; it is given by the convergent fixed-point series $\rho^*=\rho_0+\sum_{m\ge0}(\rho_{m+1}-\rho_m)$, and no single elementary closed form is available because the defining equation is transcendental.
 The stochastic law's mean is that fixed point, with second moment bounded by Proposition~\ref{prop:fluct}.
 
 \acks{The author designed the method, implemented the system, ran the experiments, and verified all results. LLM assistants (GLM-5.3, DeepSeek V4.1 Flash) were used for coding, the Lean 4 formalization, and \LaTeX{} preparation. The author is responsible for all content. Funding: none. Competing interests: none.}
