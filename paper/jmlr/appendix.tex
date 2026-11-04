@@ -1043,18 +1043,23 @@ This section maps the paper's results to the artifact, states the formalization 
 \subsection{Result-to-declaration Map}
 Table~\ref{tab:lean-map} summarizes the correspondence between the paper's results and the Lean 4 declarations.
 
-\begin{table}[!htbp]
-\centering
-\scriptsize
+{\scriptsize
 \setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}p{1.02in} p{1.12in} p{1.9in} l@{}}
 \caption{Map from the paper's results to the Lean artifact.
 The differentiation step of Theorem~\ref{thm:window}'s convexity and the probabilistic statements are pen-and-paper; every algebraic identity with a named Lean declaration above is formalized; the remaining rows are pen-and-paper and appear in the list below.}
-\label{tab:lean-map}
-\resizebox{\textwidth}{!}{%
-\begin{tabular}{l p{1.2in} p{1.9in} l}
+\label{tab:lean-map}\\
 \toprule
 paper result & content & Lean declaration(s) & file \\
 \midrule
+\endfirsthead
+\multicolumn{4}{@{}l}{\itshape continued from the previous page}\\
+\toprule
+paper result & content & Lean declaration(s) & file \\
+\midrule
+\endhead
+\bottomrule
+\endlastfoot
 Equation~\eqref{eq:pull} & pull identity ($\gamma = 1$ and general) & \texttt{pull\_identity}, \texttt{pull\_identity\_general} & Core.lean \\
 Equation~\eqref{eq:pull} (eigenbasis) & diagonal decoupling; coordinatewise anchored solve & \texttt{eigenbasis\_solve\_coord}, \texttt{eigenbasis\_pull\_identity} & Core.lean \\
 Proposition~\ref{prop:conflict} & risk interpolation; dominance; calibration identity; optimal pull; multiplicative inversion at the optimum & \texttt{convex\_interp\_sq}, \texttt{convex\_interp\_sq\_le}, \texttt{dominance}, \texttt{dominance\_strict}, \texttt{quadratic\_calibration}, \texttt{quadratic\_calibration\_delta}, \texttt{optimal\_pull\_min}, \texttt{optimal\_pull\_attained}, \texttt{pull\_inverse} & Core.lean \\
@@ -1080,9 +1085,7 @@ Propositions~\ref{prop:ergodic},~\ref{prop:fluct} & invariant measure; second-mo
 Corollary~\ref{cor:mixed} & mixed-drift master law & --- (pen-and-paper, Appendix~\ref{app:proofs}) & --- \\
 Theorem~\ref{thm:rmt} & spectral retention and streaming risk; collapse/renormalization identities & \texttt{de\_log\_identity}, \texttt{de\_collapse} (convergence pen-and-paper) & Core.lean \\
 Props.~\ref{prop:app-map},~\ref{prop:app-emh}; Cors.~\ref{cor:app-rank},~\ref{cor:app-anchor-excites} & exact MAP; excitation/rank; anchoring removes the excitation requirement & --- (pen-and-paper, Appendix~\ref{app:support}) & --- \\
-\bottomrule
-\end{tabular}}
-\end{table}
+\end{longtable}}
 
 \subsection{Coverage and Formalization Boundary}
 The artifact contains 87 theorem and lemma declarations, all proved: 44 in \texttt{Core.lean}, 12 in \texttt{Ogd.lean}, 9 in \texttt{Hedge.lean}, 6 in \texttt{BoxD.lean}, and 16 in \texttt{Coupled.lean}.

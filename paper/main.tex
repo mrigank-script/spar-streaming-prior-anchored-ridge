@@ -4,7 +4,7 @@
 % \usepackage[preprint]{tmlr} instead.
 \usepackage{tmlr}
 \usepackage{amsmath,amssymb}
-\usepackage{booktabs,multirow,graphicx,subcaption}
+\usepackage{booktabs,multirow,graphicx,subcaption,longtable}
 \usepackage{microtype}
 \usepackage{needspace}
 \usepackage[hidelinks]{hyperref}
@@ -201,12 +201,10 @@ Algorithm~\ref{alg:spar-pull} gives the complete step loop; apart from one fixed
 \textbf{Estimator branches and solver variants.}
 Step~(iv) of the algorithm takes the maximum of three prediction-unit branches, all in $[y^2]$:
 \[
-\begin{aligned}
-C^\Sigma_{\mathrm{ref}} &= (G_{\mathrm{ref}} - \widehat w)^\top \bar A_t\,(G_{\mathrm{ref}} - \widehat w) - \widehat V^\Sigma, &
-C^\Sigma_{\mathrm{resid}} &= E_t, \\
-C^\Sigma_{\mathrm{floor}} &= \tfrac12\,\hat\sigma^2 d_{\mathrm{act}}/T_w, &
-\widehat V^\Sigma &= \hat\sigma^2 d_{\mathrm{act}}/n,
-\end{aligned}
+\begin{array}{@{}l@{\qquad}l@{}}
+C^\Sigma_{\mathrm{ref}} = (G_{\mathrm{ref}} - \widehat w)^\top \bar A_t\,(G_{\mathrm{ref}} - \widehat w) - \widehat V^\Sigma, & C^\Sigma_{\mathrm{resid}} = E_t, \\
+C^\Sigma_{\mathrm{floor}} = \tfrac12\,\hat\sigma^2 d_{\mathrm{act}}/T_w, & \widehat V^\Sigma = \hat\sigma^2 d_{\mathrm{act}}/n,
+\end{array}
 \]
 with $\widehat w = (\bar A_t + \rho_{\mathrm{ridge}} I)^{-1}\bar b_t$, where $\rho_{\mathrm{ridge}} = 10^{-6}$ is the fixed numerical ridge of the reference-branch data solve ($10^{-8}$ is the ridge used in the active-dimension and trace computations), and $\rho_{\min} = 0.02$ while the window is at least half open ($\omega_t \ge \tfrac12\omega_{\max}$), otherwise the stationary value $10^{-5}$, is the anchor-strength clip floor.
 The reference branch compares against the slow copy $G_{\mathrm{ref}}$ rather than the refreshed $G$, so the conflict does not collapse immediately after a refresh. The residual branch supplies the fast disengagement, and the floor branch is the irreducible warm-up conflict.
