@@ -41,9 +41,13 @@ ABL_CFG = [("abrupt", "decay3", "warm", "gauss"),
            ("covrot", "iso", "warm", "gauss"),
            ("abrupt", "iso", "adversarial", "gauss"),
            ("osc", "iso", "warm", "gauss")]
-BASE_METHODS = ["df[0.999]", "df[0.997]", "df[0.995]", "df[0.99]",
-                "adam[0.001]", "adam[0.0003]",
-                "arow[0.01]", "arow[0.1]", "arow[0.5]"]
+BASE_METHODS = [("df[0.999]", "df", 0.999), ("df[0.997]", "df", 0.997),
+                ("df[0.995]", "df", 0.995), ("df[0.99]", "df", 0.99),
+                ("adam[0.001]", "adam", 0.001),
+                ("adam[0.0003]", "adam", 0.0003),
+                ("arow[0.01]", "arow", 0.01), ("arow[0.1]", "arow", 0.1),
+                ("arow[0.5]", "arow", 0.5)]
+BASE_METHOD_NAMES = [name for name, _kind, _value in BASE_METHODS]
 ABL_VARIANTS = {
     "full": {},
     "fixed_w": dict(w_min=5e-4, w_max=5e-4),
@@ -105,17 +109,14 @@ def run_grid(task):
     preds_egp = run_spar_eg(x, y, T_WARM, G_init=G, extra_preds=preds)
     rows.append(_row(meta("spar_eg_plus"), preds_egp, y_te,
                      regs, t1p, time.perf_counter() - t0))
-    for name in BASE_METHODS:
+    for name, kind, value in BASE_METHODS:
         t1 = time.perf_counter()
-        if name.startswith("df["):
-            lam = float(name[3:-1])
-            p = run_df(x, y, T_WARM, lam_f=lam, rho=0.1)
-        elif name.startswith("adam["):
-            lr = float(name[5:-1])
-            p = run_adam(x, y, T_WARM, lr=lr)
+        if kind == "df":
+            p = run_df(x, y, T_WARM, lam_f=value, rho=0.1)
+        elif kind == "adam":
+            p = run_adam(x, y, T_WARM, lr=value)
         else:
-            r = float(name[5:-1])
-            p = run_arow(x, y, T_WARM, r=r)
+            p = run_arow(x, y, T_WARM, r=value)
         rows.append(_row(meta(name), p, y_te, regs, t1p,
                          time.perf_counter() - t1))
     return drift, rows
@@ -193,7 +194,7 @@ def existing_keys(suite):
         # every variant that is already present.
         return set(zip(df["drift"], df["spectrum"], df["prior"],
                        df["seed"], df["method"]))
-    need_main = {"spar_pull", "spar_eg", "spar_eg_plus", *BASE_METHODS}
+    need_main = {"spar_pull", "spar_eg", "spar_eg_plus", *BASE_METHOD_NAMES}
     need_stress = {"spar_pull", "spar_eg_plus"}
     out = set()
     for key, g in df.groupby(["spectrum", "drift", "prior", "noise", "seed"]):

@@ -37,6 +37,9 @@ from runner import classifier  # noqa: E402
 
 from core import features  # noqa: E402
 from bench_eeg import FEAT_CFG  # noqa: E402
+from spar_constants import (RIDGE_REF, ACT_THRESH,  # noqa: E402
+                           EEG_GREF_HORIZON, EEG_SLOW_ETA)
+from spar_estimators import strength_window_update  # noqa: E402
 
 from pyriemann.classification import FgMDM, MDM  # noqa: E402
 from pyriemann.estimation import Covariances  # noqa: E402
@@ -71,7 +74,7 @@ def stream_spar_kf_eeg(X_tr, y_tr, X_st, y_st, K, refresh_every=5,
     sigma2_fast = sigma2_base
 
     eta_f = 1.0 / resid_fast
-    eta_ref = refresh_every / 150.0
+    eta_ref = refresh_every / EEG_GREF_HORIZON
     C_ema = None
     nu2_ema = 0.0
     w = w_min
@@ -92,9 +95,9 @@ def stream_spar_kf_eeg(X_tr, y_tr, X_st, y_st, K, refresh_every=5,
             mu_bar = float(np.trace(Abar) / D) + 1e-12
             mu_all = np.linalg.eigvalsh(Abar)
             d_act = max(1, int(np.sum(
-                mu_all > 1e-8 * max(float(mu_all.max()), 1e-12))))
+                mu_all > ACT_THRESH * max(float(mu_all.max()), 1e-12))))
             V_hat = sigma2_base * d_act * K / n_eff
-            W_data = np.linalg.solve(A + n_eff * 1e-6 * np.eye(D), B)
+            W_data = np.linalg.solve(A + n_eff * RIDGE_REF * np.eye(D), B)
             delta = G_ref - W_data
             C_ref = float(np.sum(delta * (Abar @ delta))) - V_hat
             E_resid = max(0.0, sigma2_fast - sigma2_base)
@@ -102,22 +105,13 @@ def stream_spar_kf_eeg(X_tr, y_tr, X_st, y_st, K, refresh_every=5,
             C_floor = 0.5 * sigma2_base * d_act * K / n_eff
             if C_ema is None:
                 C_ema = 2.0 * C_floor
-            C_ema = (1 - eta_C) * C_ema + eta_C * max(C_ref, C_resid,
-                                                      C_floor, 1e-10)
-            rho_raw = mu_bar * V_hat / C_ema
-            cap = rho_init if cyc < K_cal else clip_hi
-            rho = float(np.clip(rho_raw, 1e-5, cap))
-
-            # window estimator: forgetting rate (variance-floor-subtracted inversion)
-            s_bar = rho / (mu_bar + rho)
-            c_prime = (1.0 - s_bar) ** 2 * sigma2_base * D
-            nu2_hat = max(E_resid * w * w
-                          - c_prime * w ** 3 / max(2.0 - w, 1e-6), 0.0)
-            nu2_ema = (1 - eta_nu) * nu2_ema + eta_nu * nu2_hat
-            kappa = 4.0 * nu2_ema / max(c_prime, 1e-12)
-            w_star = kappa ** (1.0 / 3.0)
-            w = w_min if cyc < K_cal else float(
-                np.clip(w_star, w_min, w_max))
+            rho, w, C_ema, nu2_ema = strength_window_update(
+                C_ema=C_ema, nu2_ema=nu2_ema, V_hat=V_hat, C_ref=C_ref,
+                C_resid=C_resid, C_floor=C_floor, E_resid=E_resid,
+                mu_bar=mu_bar, rho=rho, w=w, sigma2_base=sigma2_base, D=D,
+                cyc=cyc, K_cal=K_cal, eta_C=eta_C, eta_nu=eta_nu,
+                w_min=w_min, w_max=w_max, clip_lo=1e-5,
+                cap=(rho_init if cyc < K_cal else clip_hi))
             alpha = 1.0 - w
 
         W = np.linalg.solve(A + n_eff * rho * np.eye(D),
@@ -130,7 +124,7 @@ def stream_spar_kf_eeg(X_tr, y_tr, X_st, y_st, K, refresh_every=5,
 
         e_t = float(np.mean((Yst[i] - score) ** 2))
         sigma2_fast = (1 - eta_f) * sigma2_fast + eta_f * e_t
-        sigma2_base = (1 - 5e-4) * sigma2_base + 5e-4 * e_t
+        sigma2_base = (1 - EEG_SLOW_ETA) * sigma2_base + EEG_SLOW_ETA * e_t
 
         if step % refresh_every == 0 and step > 0:
             Abar = A / n_eff

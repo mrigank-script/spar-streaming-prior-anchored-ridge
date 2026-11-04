@@ -1,28 +1,16 @@
-"""Baseline method library for the synthetic factorial grid.
+"""SPAR streaming heads, with the baseline library re-exported.
 
-Implements the competitor library for the factorial grid, plus the
-theory-exact diagonal-rho SPAR:
+``rls_baselines`` keeps the SPAR-Pull family -- the anchored, self-calibrating
+streaming heads -- and re-exports the stream generator, the priors, and the
+competitor baselines, so ``from rls_baselines import <name>`` keeps working:
 
-  run_rls        plain / leaky RLS (forgetting factor lam, ridge rho)
-  run_df         DIRECTIONAL FORGETTING (Kulhavy 1987; Cao & Schwartz 2004)
-                 -- the mechanism underlying SIFt-RLS (Palem et al. 2023 add
-                 stabilization heuristics on top of this update; we implement
-                 the canonical DF update with the standard small-gamma guard)
-  run_arow       AROW (Crammer, Dredze & Pereira 2009), regression form
-  run_kf         Kalman filter with random-walk state model (Q = qI, R given)
-                 -- the drift-rate-oracle tracker
-  run_sgd        online SGD on squared loss
-  run_adam       online Adam on squared loss
-  wiseft_models  WiSE-FT protocol: (zero-shot warm model, end-of-stream
-                 fine-tuned model); caller sweeps the interpolation alpha
-                 post-hoc (their protocol reports the alpha-envelope)
-  run_spar_diag  DIAGONAL-rho SPAR: per-direction strength
-                 rho_i* = mu_i * v_i / delta_i^2 (Theorem 5, theory-exact)
+  run_spar_diag  DIAGONAL-rho SPAR: per-direction strength (Theorem 5)
+  run_spar_kf    SPAR-Pull: scalar strength + forgetting window
+  run_spar_eg    SPAR-EG: expert-simplex composition
 
-Also provides make_stream_fac: the multi-factor stream generator
-(spectrum x drift-geometry x noise x prior axes).
+Streams/priors live in :mod:`spar_streams`; baselines in :mod:`spar_baselines`.
 
-Sanity checks (python scripts/rls_baselines.py):
+Sanity checks (``python scripts/rls_baselines.py``):
   RLS(lam=1) matches the batch count-scaled ridge at every step;
   DF(lam_f=1) reduces to RLS(lam=1);
   KF(q=0) reduces to RLS(lam=1) up to gain scaling;
@@ -41,280 +29,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from spar_test import run_spar_v2  # noqa: E402
+# Re-exported so existing imports keep working (flake8: F401).
+from spar_streams import make_stream_fac, make_prior  # noqa: E402,F401
+from spar_baselines import (run_rls, run_vff, run_df, run_arow, run_kf,  # noqa: E402,F401
+                            run_sgd, run_adam, wiseft_models, wiseft_preds,
+                            run_kf_est, run_leaky_batch)
 
-
-# ---------------------------------------------------------------- streams
-
-def make_stream_fac(seed=0, D=128, T=10000, sigma=0.1,
-                    spectrum="iso", drift="abrupt", noise="gauss",
-                    drift_frac=(1 / 3, 2 / 3), mismatch="none"):
-    """Multi-factor three-phase stream with optional model mismatch.
-
-    mismatch: none | nonlinear (y = tanh(x·w) + ε, linear head misspecified)
-              | covshift (feature covariance doubles mid-stream)
-              | hetnoise (observation-noise variance 0.01 -> 0.05 from t1)
-    """
-    rng = np.random.default_rng(seed)
-    if spectrum == "iso":
-        lam0 = np.ones(D)
-    elif spectrum == "decay3":
-        lam0 = np.logspace(0, -3, D)
-    elif spectrum == "rankdef":
-        lam0 = np.logspace(0, -2, D)
-        lam0[D // 2:] = 0.0
-    else:
-        raise ValueError(spectrum)
-    Q0, _ = np.linalg.qr(rng.normal(size=(D, D)))
-    order = np.argsort(lam0)[::-1]
-    lam0 = lam0[order]
-    Q0 = Q0[:, order]
-
-    t1, t2 = int(T * drift_frac[0]), int(T * drift_frac[1])
-    w0 = rng.normal(scale=0.5, size=D)
-    w1 = w0 + rng.normal(scale=0.7, size=D)
-
-    w_true = np.zeros((T, D))
-    if drift in ("abrupt", "both"):
-        w_true[:] = w0
-        w_true[t1:] = w1
-    elif drift in ("gradual",):
-        ramp = np.zeros(T)
-        ramp[t1:t2] = np.linspace(0, 1, t2 - t1)
-        ramp[t2:] = 1.0
-        w_true[:] = (1 - ramp[:, None]) * w0 + ramp[:, None] * w1
-    elif drift in ("covrot", "exdeath"):
-        w_true[:] = w0
-    elif drift == "osc":
-        w_true[:] = w0
-        per = 800
-        for s in range(t1, T, per):
-            if ((s - t1) // per) % 2 == 1:
-                w_true[s:s + per] = w1
-    elif drift == "none":
-        w_true[:] = w0
-    else:
-        raise ValueError(drift)
-
-    Z = rng.normal(size=(T, D))
-    U = Z * np.sqrt(lam0)[None, :]
-    if drift in ("covrot", "both"):
-        theta = np.zeros(T)
-        ramp = np.zeros(T)
-        ramp[t1:t2] = np.linspace(0, 1, t2 - t1)
-        ramp[t2:] = 1.0
-        theta = (np.pi / 2) * ramp
-        c, s_ = np.cos(theta), np.sin(theta)
-        u0, u1 = U[:, 0].copy(), U[:, 1].copy()
-        U[:, 0] = c * u0 - s_ * u1
-        U[:, 1] = s_ * u0 + c * u1
-    if drift == "exdeath":
-        decay = np.ones(T)
-        ramp = np.linspace(0, 1, t2 - t1)
-        decay[t1:t2] = np.exp(-9 * ramp)
-        decay[t2:] = np.exp(-9)
-        U[:, :4] *= decay[:, None]
-    if mismatch == "covshift":
-        # double the feature scale for the second half of the stream
-        U[t1:] *= 2.0
-
-    X = U @ Q0.T
-
-    if noise == "gauss":
-        eps = sigma * rng.normal(size=T)
-    elif noise == "t3":
-        g = rng.standard_t(3, size=T)
-        eps = sigma * g / np.sqrt(3.0 / (3.0 - 2.0))
-    else:
-        raise ValueError(noise)
-
-    if mismatch == "hetnoise":
-        # observation-noise scale change: sigma^2 0.01 -> 0.05 from t1 on
-        eps = np.where(np.arange(T) >= t1, np.sqrt(5.0), 1.0) * eps
-
-    if mismatch == "nonlinear":
-        # y = tanh(x·w*) + ε: the linear head is misspecified
-        y = np.tanh(np.einsum("td,td->t", X, w_true)) + eps
-    else:
-        y = np.einsum("td,td->t", X, w_true) + eps
-    return X, y, w_true, t1, t2, Q0, lam0
-
-
-def make_prior(prior, x, y, w_true, t1, T_warm, Q0, lam0, rng=None):
-    """Anchor prior for the prior axis. Returns (G_init, label).
-
-    warm: data-estimated from the warm-up window (None -> methods fit it)
-    oracle: the true pre-drift teacher w0
-    adversarial: w0 + 2*||w0||*q1  (worst case: error in the TOP direction)
-    """
-    D = x.shape[1]
-    if prior == "warm":
-        return None
-    if prior == "oracle":
-        return w_true[T_warm - 1].copy()
-    if prior == "adversarial":
-        w0 = w_true[T_warm - 1]
-        return w0 + 2.0 * np.linalg.norm(w0) * Q0[:, 0]
-    raise ValueError(prior)
-
-
-# ---------------------------------------------------------------- methods
-
-def run_rls(x, y, T_warm, lam=1.0, rho=0.1):
-    """Plain (lam=1) or leaky (lam<1) RLS via the P recursion."""
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + rho * T_warm * np.eye(D), b_w)
-    P = np.linalg.inv(A_w / T_warm + rho * np.eye(D)) / T_warm
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        preds[t - T_warm] = x[t] @ W
-        k = P @ x[t]
-        gain = k / (lam + x[t] @ k)
-        W = W + gain * (y[t] - x[t] @ W)
-        P = (P - np.outer(gain, k)) / lam
-    return preds
-
-
-def run_vff(x, y, T_warm, lam0=1.0, lam_min=0.95, rho=0.1):
-    """Variable Forgetting Factor RLS (Fortescue, Kershenbaum & Ydstie,
-    1981): the per-step forgetting factor keeps the information content
-    near a target, lam_t = 1 - e_t^2 / (lam0 * sigma0), clipped to
-    [lam_min, 1]. Covariance-form recursion (the standard VFF family;
-    the robust variant is Paleologu, Benesty & Ciochina, 2008)."""
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + rho * T_warm * np.eye(D), b_w)
-    P = np.linalg.inv(A_w / T_warm + rho * np.eye(D)) / T_warm
-    r_warm = y[:T_warm] - x[:T_warm] @ W
-    sigma0 = float(np.var(r_warm)) + 1e-12
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        e = y[t] - x[t] @ W
-        preds[t - T_warm] = x[t] @ W
-        lam = float(np.clip(1.0 - (e * e) / (lam0 * sigma0), lam_min, 1.0))
-        k = P @ x[t]
-        gain = k / (lam + x[t] @ k)
-        W = W + gain * e
-        P = (P - np.outer(gain, k)) / lam
-    return preds
-
-
-def run_df(x, y, T_warm, lam_f=0.98, rho=0.1, eps=1e-12):
-    """Directional forgetting (Kulhavy 1987; Cao & Schwartz 2004).
-
-    Forgets ONLY along the incoming data direction:
-        P <- P + ((1-lam_f)/lam_f) (P x x^T P)/(x^T P x)
-    then the standard RLS measurement update. Directions orthogonal to the
-    data keep their information (no covariance windup) -- the property
-    SIFt-RLS stabilizes and exploits.
-    """
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + rho * T_warm * np.eye(D), b_w)
-    P = np.linalg.inv(A_w / T_warm + rho * np.eye(D)) / T_warm
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        preds[t - T_warm] = x[t] @ W
-        g = x[t] @ P @ x[t]
-        if g > eps:
-            k = P @ x[t]
-            P = P + ((1.0 - lam_f) / lam_f) * np.outer(k, k) / g
-        k2 = P @ x[t]
-        denom = 1.0 + x[t] @ k2
-        gain = k2 / denom
-        W = W + gain * (y[t] - x[t] @ W)
-        P = P - np.outer(gain, k2)
-    return preds
-
-
-def run_arow(x, y, T_warm, r=0.1):
-    """AROW regression: RLS measurement update with aggressive-regularized gain."""
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + 1e-3 * T_warm * np.eye(D), b_w)
-    S = np.linalg.inv(A_w / T_warm + r * np.eye(D)) / T_warm
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        preds[t - T_warm] = x[t] @ W
-        k = S @ x[t]
-        sig2 = x[t] @ k + r
-        gain = k / sig2
-        W = W + gain * (y[t] - x[t] @ W)
-        S = S - np.outer(k, k) / sig2
-    return preds
-
-
-def run_kf(x, y, T_warm, q=1e-5, R=0.01, rho_init=1e-3):
-    """Kalman filter, random-walk state model w_t = w_{t-1} + N(0, qI)."""
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + rho_init * T_warm * np.eye(D), b_w)
-    P = np.linalg.inv(A_w / T_warm + rho_init * np.eye(D)) / T_warm
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        P = P + q * np.eye(D)
-        preds[t - T_warm] = x[t] @ W
-        k = P @ x[t]
-        K = k / (x[t] @ k + R)
-        W = W + K * (y[t] - x[t] @ W)
-        P = P - np.outer(K, k)
-    return preds
-
-
-def run_sgd(x, y, T_warm, lr=0.01):
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + 1e-3 * T_warm * np.eye(D), b_w)
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        preds[t - T_warm] = x[t] @ W
-        e = x[t] @ W - y[t]
-        W = W - lr * e * x[t]
-    return preds
-
-
-def run_adam(x, y, T_warm, lr=0.01, b1=0.9, b2=0.999, eps=1e-8):
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + 1e-3 * T_warm * np.eye(D), b_w)
-    m = np.zeros(D)
-    v = np.zeros(D)
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        preds[t - T_warm] = x[t] @ W
-        g = (x[t] @ W - y[t]) * x[t]
-        m = b1 * m + (1 - b1) * g
-        v = b2 * v + (1 - b2) * g * g
-        mh = m / (1 - b1 ** (t - T_warm + 1))
-        vh = v / (1 - b2 ** (t - T_warm + 1))
-        W = W - lr * mh / (np.sqrt(vh) + eps)
-    return preds
-
-
-def wiseft_models(x, y, T_warm, rho=0.01):
-    """WiSE-FT protocol: zero-shot = warm-up ridge; fine-tuned = end-of-stream
-    accumulated solve (full stream, offline). Caller sweeps alpha post-hoc."""
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W_zero = np.linalg.solve(A_w + rho * T_warm * np.eye(D), b_w)
-    n = float(len(x))
-    A_all = x.T @ x
-    b_all = x.T @ y
-    W_ft = np.linalg.solve(A_all + rho * n * np.eye(D), b_all)
-    return W_zero, W_ft
-
-
-def wiseft_preds(x, W_zero, W_ft, alpha):
-    return x @ ((1 - alpha) * W_zero + alpha * W_ft)
+from spar_constants import (RIDGE_REF, RIDGE_TRACE, ACT_THRESH,  # noqa: E402
+                           SLOW_ETA, GREF_HORIZON)
+from spar_estimators import strength_window_update  # noqa: E402
 
 
 def run_spar_diag(x, y, T_warm, G_init=None, alpha=0.997, refresh_every=50,
@@ -435,9 +158,10 @@ def run_spar_diag(x, y, T_warm, G_init=None, alpha=0.997, refresh_every=50,
 
 # ---------------------------------------------------------------- SPAR-Pull
 
+
 def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma=1.0,
                 w_min=5e-4, w_max=0.05, K_cal=10, eta_C=0.15, eta_nu=0.2,
-                base_eta=5e-5, resid_fast=100, clip_lo=1e-5, clip_hi=1.0,
+                base_eta=SLOW_ETA, resid_fast=100, clip_lo=1e-5, clip_hi=1.0,
                 rho_init=0.1, ridge=0.01, return_diag=False,
                 rho_drift_floor=None, use_cusum=True, use_ref=True,
                 adaptive_rho=True, debias_variance_floor=False,
@@ -494,11 +218,11 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
     # The trace inverse is only used by the legacy parameter-unit branch; the
     # prediction-unit path uses the active dimension instead.  Skip the O(D^3)
     # inverse there (numerically identical, materially faster at D >= 300).
-    tr_inv_warm = (float(np.trace(np.linalg.inv(Abar_warm + 1e-8 * np.eye(D))))
+    tr_inv_warm = (float(np.trace(np.linalg.inv(Abar_warm + RIDGE_TRACE * np.eye(D))))
                    if not prediction_units else 0.0)
 
     eta_f = 1.0 / resid_fast
-    eta_ref = refresh_every / 2000.0
+    eta_ref = refresh_every / GREF_HORIZON
     C_floor_base = (0.5 * sigma2_base * D / T_warm if prediction_units
                     else 0.5 * sigma2_base * tr_inv_warm / T_warm)
     C_ema = 2 * C_floor_base
@@ -518,16 +242,16 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
             Abar = A / n_eff
             mu_bar = float(np.trace(Abar) / D) + 1e-12
             if not prediction_units:
-                tr_inv = float(np.trace(np.linalg.inv(Abar + 1e-8 * np.eye(D))))
+                tr_inv = float(np.trace(np.linalg.inv(Abar + RIDGE_TRACE * np.eye(D))))
             else:
                 tr_inv = 0.0
-            W_data = np.linalg.solve(A + n_eff * 1e-6 * np.eye(D), B)
+            W_data = np.linalg.solve(A + n_eff * RIDGE_REF * np.eye(D), B)
             E_resid = max(0.0, sigma2_fast - sigma2_base)
 
             # estimator 1: anchor strength
             if prediction_units:
                 mu_all = np.linalg.eigvalsh(Abar)
-                d_act = max(1, int(np.sum(mu_all > 1e-8 * max(float(mu_all.max()), 1e-12))))
+                d_act = max(1, int(np.sum(mu_all > ACT_THRESH * max(float(mu_all.max()), 1e-12))))
                 V_hat = sigma2_base * d_act / n_eff
                 delta = G_ref - W_data
                 C_ref = float(delta @ (Abar @ delta)) - V_hat
@@ -538,47 +262,17 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
                 C_ref = float(np.sum((G_ref - W_data) ** 2)) - V_hat
                 C_resid = E_resid * tr_inv / (n_eff * mu_bar)
                 C_floor_use = C_floor_base
-            cands = []
-            if use_ref:
-                cands.append(C_ref)
-            if use_cusum:
-                cands.append(C_resid)
-            cands += [C_floor_use, 1e-10]
-            C_raw = max(cands)
-            C_ema = (1 - eta_C) * C_ema + eta_C * C_raw
-            if adaptive_rho:
-                rho_raw = mu_bar * V_hat / C_ema
-                cap = rho_init if cyc < K_cal else clip_hi
-                lo = clip_lo
-                if rho_drift_floor is not None and w >= 0.5 * w_max:
-                    lo = max(lo, rho_drift_floor)
-                rho = float(np.clip(rho_raw, lo, cap))
-            if rho_pin is not None:
-                rho = float(rho_pin)
-
-            # estimator 2: forgetting window
-            if debias_variance_floor:
-                s_bar = rho / (mu_bar + rho)
-                c_prime = (1.0 - s_bar) ** 2 * sigma2_base * D
-                nu2_hat = max(E_resid * w * w
-                              - c_prime * w ** 3 / max(2.0 - w, 1e-6), 0.0) \
-                    if use_cusum else 0.0
-                nu2_ema = (1 - eta_nu) * nu2_ema + eta_nu * nu2_hat
-                kappa = 4.0 * nu2_ema / max(c_prime, 1e-12)
-            else:
-                nu2_hat = E_resid * w * w / max((1.0 - w) ** 2, 1e-12) \
-                    if use_cusum else 0.0
-                nu2_ema = (1 - eta_nu) * nu2_ema + eta_nu * nu2_hat
-                s_bar = rho / (mu_bar + rho)
-                kappa = 2.0 * nu2_ema / max(
-                    (1 - s_bar) ** 2 * sigma2_base * D, 1e-12)
-            w_star = kappa ** (1.0 / 3.0)
-            if cyc < K_cal:
-                w = w_min
-            else:
-                w = float(np.clip(w_star, w_min, w_max))
-            if w_pin is not None:
-                w = float(w_pin)
+            rho, w, C_ema, nu2_ema = strength_window_update(
+                C_ema=C_ema, nu2_ema=nu2_ema, V_hat=V_hat, C_ref=C_ref,
+                C_resid=C_resid, C_floor=C_floor_use, E_resid=E_resid,
+                mu_bar=mu_bar, rho=rho, w=w, sigma2_base=sigma2_base, D=D,
+                cyc=cyc, K_cal=K_cal, eta_C=eta_C, eta_nu=eta_nu,
+                w_min=w_min, w_max=w_max, clip_lo=clip_lo,
+                cap=(rho_init if cyc < K_cal else clip_hi),
+                adaptive_rho=adaptive_rho,
+                debias_variance_floor=debias_variance_floor, use_ref=use_ref,
+                use_cusum=use_cusum, rho_drift_floor=rho_drift_floor,
+                rho_pin=rho_pin, w_pin=w_pin)
             alpha = 1.0 - w
 
         A_eff = A + n_eff * rho * np.eye(D)
@@ -620,50 +314,6 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
 
 
 # --------------------------------------------- baselines and the SPAR-EG arm
-
-def run_kf_est(x, y, T_warm, q=1e-4, rho_init=1e-3, eta_R=0.01):
-    """Kalman random-walk with R ESTIMATED online from squared innovations
-    (fast EMA, horizon ~1/eta_R) -- R is estimated from residuals, not an
-    oracle. The noise-adaptive fair baseline."""
-    D = x.shape[1]
-    A_w = x[:T_warm].T @ x[:T_warm]
-    b_w = x[:T_warm].T @ y[:T_warm]
-    W = np.linalg.solve(A_w + rho_init * T_warm * np.eye(D), b_w)
-    P = np.linalg.inv(A_w / T_warm + rho_init * np.eye(D)) / T_warm
-    r_warm = y[:T_warm] - x[:T_warm] @ W
-    R_est = float(np.var(r_warm)) + 1e-12
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        P = P + q * np.eye(D)
-        preds[t - T_warm] = x[t] @ W
-        r = y[t] - x[t] @ W
-        R_est = (1 - eta_R) * R_est + eta_R * (r * r)
-        k = P @ x[t]
-        K = k / (x[t] @ k + R_est)
-        W = W + K * r
-        P = P - np.outer(K, k)
-    return preds
-
-
-def run_leaky_batch(x, y, T_warm, lam=0.995, ridge_frac=0.01):
-    """Batch (information-form) solve of the exponentially-weighted LS with
-    matched ridge: the cliff-figure control. Maintains the SAME alpha-window
-    accumulator as leaky RLS but solves directly, immune to the covariance
-    recursion's numerical windup. If the lambda-cliff is intrinsic to short
-    windows (rank deficiency), this arm still suffers but must NOT explode."""
-    D = x.shape[1]
-    A = x[:T_warm].T @ x[:T_warm].astype(np.float64)
-    B = x[:T_warm].T @ y[:T_warm]
-    n_eff = float(T_warm)
-    ridge = ridge_frac
-    preds = np.zeros(len(y) - T_warm)
-    for t in range(T_warm, len(y)):
-        W = np.linalg.solve(A + ridge * n_eff * np.eye(D), B)
-        preds[t - T_warm] = x[t] @ W
-        A = lam * A + np.outer(x[t], x[t])
-        B = lam * B + x[t] * y[t]
-        n_eff = lam * n_eff + 1.0
-    return preds
 
 
 def run_spar_eg(x, y, T_warm, lams=(1.0, 0.997, 0.995, 0.99),
@@ -736,6 +386,7 @@ def run_spar_eg(x, y, T_warm, lams=(1.0, 0.997, 0.995, 0.99),
 
 
 # ---------------------------------------------------------------- sanity
+
 
 def _sanity() -> None:
     rng = np.random.default_rng(0)
