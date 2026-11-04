@@ -2,12 +2,12 @@
 
 Closed-form streaming heads for drifting data streams: a ridge solve anchored
 to a prior, with two quantities the method calibrates online from its own
-residuals — the anchor strength and the forgetting window. The repository also
+residuals: the anchor strength and the forgetting window. The repository also
 contains the formalization of the proof core in Lean 4.
 
-This is the companion code for the manuscript in `paper/` (`paper/main.tex`,
-built with `paper/build.cmd`). Every number and figure in the paper is
-machine-printed into `results/` by the scripts below.
+This is the companion code for the JMLR manuscript in `paper/jmlr/`
+(`paper/jmlr/main.tex`, built with `paper/jmlr/build.cmd`). Every number and
+figure in the paper is machine-printed into `results/` by the scripts below.
 
 Version 0.2.0; see `CHANGELOG.md` for the upgrade cycle and `VERSION` for the
 released version.
@@ -22,7 +22,7 @@ released version.
 | `scripts/` | benchmarks, experiments, and the reproducibility driver |
 | `results/` | every table and figure in the paper, machine-printed from the drivers |
 | `theory/lean/` | the Lean 4 formalization (`SparTheorems`) and its build scripts |
-| `paper/` | the manuscript source (`main.tex`, `appendix.tex`) and the TMLR style files |
+| `paper/jmlr/` | the manuscript source (`main.tex`, `appendix.tex`, `appendix_online.tex`) and the JMLR style file |
 | `tests/` | pytest suite |
 
 The umbrella package is named `aal` in `pyproject.toml`; SPAR is the method it
@@ -158,18 +158,18 @@ in `results/` that the manuscript cites.
 
 ## 4. Build the manuscript
 
-From `paper/`:
+From `paper/jmlr/`:
 
 ```bash
-build.cmd          # Windows: 4-pass pdflatex + bibtex -> build/main.pdf
-bash build.sh      # Linux / macOS / WSL: same build -> build/main.pdf
+build.cmd          # Windows: 4-pass pdflatex + bibtex -> build/main.pdf and build/appendix_online.pdf
+bash build.sh      # Linux / macOS / WSL: same build
 ```
 
-Both scripts create `build/` if it is missing and clear stray root-level
-outputs first, so the result is always `paper/build/main.pdf` (never a root
-`main.pdf`). The compiled PDF also ships with the artifact. `main.tex` keeps
-the author block for the named camera-ready (`\usepackage[preprint]{tmlr}`);
-the submission PDF and the packaged source are anonymous.
+Both scripts create `build/` if it is missing, so the result is always
+`paper/jmlr/build/main.pdf` plus the separate `appendix_online.pdf`. The
+compiled manuscript PDF also ships with this package. The archived preprint PDF
+is the same source built with `\usepackage[preprint]{jmlr2e}`, which drops the
+journal line and editor field but keeps the identical layout.
 
 ## 5. Lean artifact (optional)
 
