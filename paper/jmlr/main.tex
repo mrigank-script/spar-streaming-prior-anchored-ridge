@@ -71,7 +71,7 @@ The refresh equilibrium gives the exact lag $\Delta_k(s)$ and variance factor $\
 
 \item \emph{A finite-dimensional spectral correction.}
 The separable-covariance deterministic equivalent gives the retention $q$, the renormalized anchor $\rho_{\mathrm{eff}}$, the variance functional $\Upsilon$, and the full excess risk with its $1/(1-\Upsilon)$ correction (Theorem~\ref{thm:rmt}).
-The formula matches Monte Carlo within $4.4\%$ across the $45$-point grid (including the rank-deficient spectrum), within $13\%$ at the method's own operating points, and within $9.5\%$ for the conflict increment; rank-deficient populations reduce exactly to their active subspace (Corollary~\ref{cor:rmt-active}).
+The formula matches Monte Carlo within $4.0\%$ across the $45$-point grid (including the rank-deficient spectrum), within $13\%$ at the method's own operating points, and within $10.0\%$ for the conflict increment; rank-deficient populations reduce exactly to their active subspace (Corollary~\ref{cor:rmt-active}).
 
 \item \emph{A formalized core.}
 The algebraic core, the finite-cadence refresh chain, the OGD and Hedge regret bounds, and the coupled contraction are formalized in Lean 4: 85 declarations, no \texttt{sorry}, and only the three standard axioms (Appendix~\ref{app:lean}).
@@ -330,7 +330,7 @@ With $b(s) = s(2-s)/(1-s)^2$ and $k\omega \le 1/2$, the residual of Theorem~\ref
   \Delta_k(s_i) = s_i\,\nu_i\,k\bigl(b(s_i)+\tfrac12\bigr) \;\le\; \tfrac12\,s_i\bigl(b(s_i)+\tfrac12\bigr)\,\frac{\nu_i}{\omega},
 \]
 a fixed fraction of the leading lag that vanishes as $s_i \to 0$, whose prediction cost $\mu_i\,\Delta_k(s_i)^2$ is $\mu_i$-weighted and concentrated in weakly excited directions.
-Over the runtime range $k\omega \in [0.005, 0.5]$ the surrogate's cubic minimizer stays within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ (within $5.2\%$ for $s_i \le 0.3$, the largest gaps at the window floor; Appendix~\ref{app:proof-window}).
+Over the runtime range $k\omega \in [0.005, 0.5]$ the surrogate's cubic minimizer stays within $2.1\%$ of the exact cycle-averaged optimum for $s_i \le 0.2$ (within $5.1\%$ for $s_i \le 0.3$, the largest gaps at the window floor; Appendix~\ref{app:proof-window}).
 In the quasi-static limit $1 \ll k\omega \ll 1/s$ (so $s \ll 1/(k\omega) \ll 1$) both corrections vanish identically, with $\Psi(s_i,r_k) = (1-s_i)^2(1+O(s_i^2+r_k))$ and $\Delta_k(s_i) = o(\nu_i/\omega)$, and the reduced form is exact:
 \[
   R_k(\omega,s) = c'\,\frac{\omega}{2-\omega} + \frac{\nu^2_\Sigma}{\omega^2} + o(1),
@@ -411,7 +411,7 @@ R_{\mathrm{pred}} \;\longrightarrow\; \frac{1}{1 - \Upsilon}\left[\sigma^2 \Upsi
 The oracle anchor recovers Part~(i), and the classical limit $\zeta \to 0$ recovers Proposition~\ref{prop:conflict}'s per-direction conflict bias $\mu_i(\rho/(\mu_i+\rho))^2\delta_i^2$. Part~(i) is therefore the variance component of the risk, while Part~(iii) is the full risk.
 \end{theorem}
 The convergence step is the separable-covariance deterministic equivalent \citep{silverstein1995,rubio2011,hachem2007}; the nearest prior analysis, the large-system exponentially windowed RLS of \citet{xiao2005}, has no anchor, pulls, refresh, or online calibration, and the ridge-risk line \citep{hastie2022} treats unweighted batches.
-The finite-window spreading is a single renormalization $\rho \mapsto \rho_{\mathrm{eff}} \ge \rho$: the formula matches simulation within $4.4\%$ across the $45$-point fixed-point grid (including the rank-deficient spectrum) and the measured operating pairs within $13\%$.
+The finite-window spreading is a single renormalization $\rho \mapsto \rho_{\mathrm{eff}} \ge \rho$: the formula matches simulation within $4.0\%$ across the $45$-point fixed-point grid (including the rank-deficient spectrum) and the measured operating pairs within $13\%$.
 It is a correction to the analysis, not a term fed back into the runtime rule: Algorithm~\ref{alg:spar-pull} keeps the mean-field plug-in $\hat c'_t$, and Theorem~\ref{thm:rmt} quantifies what that forgoes as $\zeta$ grows.
 When $\Sigma$ is rank-deficient, exact null directions carry zero out-of-sample risk, so the deterministic equivalent restricts exactly to $\operatorname{range}(\Sigma)$, with the aspect ratio rescaled by the rank fraction $\zeta^+ = p\zeta$ (Corollary~\ref{cor:rmt-active}).
 Part~(ii) supplies the analytic coupling product used in Theorem~\ref{thm:closedloop}: in logarithmic coordinates the product is at most $\tfrac{4}{3(2-\omega)}\,\bar s < 1$ for all $\omega \in (0, 2/3)$ (Online Appendix~\ref{app:protocol}).
@@ -447,7 +447,7 @@ A transient sweep (Online Appendix Table~\ref{tab:transient}) shows that the ada
 Online Appendix Figure~\ref{fig:cliffapp} sweeps the window and locates the sharp degradation at short windows, confirming that the calibrated method stays on the stable side.
 
 \emph{Finite-$D$ correction.}
-The deterministic-equivalent formula matches the Monte Carlo stationary risk within $4.4\%$ across all $45$ operating points of the grid, including the rank-deficient spectrum (Appendix~\ref{app:rmt-validation}), within $13\%$ at the method's own operating points, and the conflict increment within $9.5\%$.
+The deterministic-equivalent formula matches the Monte Carlo stationary risk within $4.0\%$ across all $45$ operating points of the grid, including the rank-deficient spectrum (Appendix~\ref{app:rmt-validation}), within $13\%$ at the method's own operating points, and the conflict increment within $10.0\%$.
 Rank-deficient spectra reduce exactly to the active subspace (Corollary~\ref{cor:rmt-active}); Section~\ref{sec:limitations} records the conditions.
 
 \subsection{Fixed-protocol Comparison}

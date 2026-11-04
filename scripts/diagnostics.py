@@ -739,9 +739,9 @@ def diag_subopt() -> None:
     frozen-anchor cycle average; the exact cycle-averaged risk replaces
     (1-s)^2 by the finite-cadence factor psi and adds the within-cycle lag
     dk, i.e. R = R_s + eps with eps = c_v psi_bar + D(2(nu/omega)dk + dk^2).
-    With R_s'' >= m > 0 and |eps'| <= eps1 on the sweep interval, the value
-    gap at the surrogate minimizer obeys R(omega_s) - min R <= eps1^2/(2m);
-    the table reports the measured gap and this certified upper bound.
+    The table reports the measured gap and the certified upper bound
+    (R_s(w0) - min R_s) + (eps(w0) - min eps), which bounds R(w0) - min R
+    because min(R_s + eps) >= min R_s + min eps.
     """
     k, sigma2, D = 10, 0.01, 128
     rows = []
@@ -762,10 +762,11 @@ def diag_subopt() -> None:
             cv = sigma2 * D * (w / (2 - w))
             Rs = cv * (1 - s) ** 2 + D * (nu / w) ** 2
             eps = risk - Rs
-            Rs2 = 4 * c / (2 - w) ** 3 + 6 * D * nu ** 2 / w ** 4
-            m = float(Rs2.min())                 # min R_s'' on the interval
-            eps1 = float(np.max(np.abs(np.gradient(eps, w))))
-            bound = float(eps1 ** 2 / (2 * m)) / float(risk.min())
+            i0 = int(np.argmin(np.abs(w - w0)))
+            # certified value-gap bound: min R >= min Rs + min eps, so
+            # R(w0) - min R <= (Rs(w0) - min Rs) + (eps(w0) - min eps)
+            bound = float((Rs[i0] - Rs.min()) + (eps[i0] - eps.min())) \
+                / float(risk.min())
             rows.append({"k_omega": k_omega, "omega": w0, "s": s,
                          "rel_gap": float(gap), "bound": float(bound),
                          "certified": bool(bound >= gap)})
