@@ -424,7 +424,7 @@ post-hoc ensemble (cov-LDA + hybrid warm fit)$^{\mathrm{T}}$ & $\mathbf{0.668 \p
 \end{table}
 
 \emph{Compute.}
-The complete closed-form suite (feature extraction plus all closed-form methods) for all nine 2b subjects runs in $17$ s on the CPU used here ($1.9$ s per subject; \texttt{results/tier1\_rerun\_2b.log}); one EEGNet-lite training configuration ($120$ epochs) trains on the WSL GPU environment, and the full backprop protocol trains three configurations per subject plus the online fine-tuning pass.
+The complete closed-form suite (feature extraction plus all closed-form methods) for all nine 2b subjects runs in $17$ s on the CPU used here ($1.9$ s per subject; \texttt{scripts/bench\_eeg\_tier1.py}); one EEGNet-lite training configuration ($120$ epochs) trains on the WSL GPU environment, and the full backprop protocol trains three configurations per subject plus the online fine-tuning pass.
 
 \emph{Feature families.}
 Three feature families feed the readouts of Table~\ref{tab:eeg}.

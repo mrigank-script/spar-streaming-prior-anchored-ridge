@@ -30,12 +30,12 @@ contributes. Internal Python/CSV identifiers are frozen for provenance:
 
 | Display name | Meaning | Internal IDs |
 |---|---|---|
-| SPAR-Pull | main method: anchor strength + forgetting window, variance-floor-subtracted drift inversion | `spar_pull`, `spar_kf2` |
+| SPAR-Pull | main method: anchor strength + forgetting window, variance-floor-subtracted drift inversion (prediction units) | `spar_pull` |
 | SPAR-Pull-S | scalar-strength arm | `spar_scalar` |
 | SPAR-Pull-D | per-direction-strength eigenbasis head | `spar_diag` |
 | SPAR-EG | Hedge composition over leaky-window experts | `spar_eg` |
 | SPAR-EG+ | SPAR-EG pool augmented with the SPAR-Pull trajectory | `spar_eg_plus` |
-| SPAR-Pull-legacy | earlier parameter-unit strength variant, retained in the CSVs | `spar_kf` |
+| SPAR-Pull-legacy | parameter-unit strength variants, retained in the CSVs | `spar_kf`, `spar_kf2` |
 
 ## 1. Environment
 
@@ -55,13 +55,18 @@ command is identical with `python3` in its place.
 
 ## 2. Get the data
 
-The synthetic results need no data; the real-data sections each need the block
-below, fetched once. The release artifact ships the derived EEG npz cache
-(`data/eeg_cache/`), so the EEG results rerun without any download; the hourly
-electricity panel and the other TSLib files are public downloads placed in
-`data/ts/` with the names below.
+The synthetic results need no data: the drift suites are generated on the fly
+by `make_stream_fac`, and every number in the paper is produced by the drivers
+below. The EEG npz cache (`data/eeg_cache/`) is not shipped; regenerate it with
+the commands below before rerunning the EEG results. The hourly electricity
+panel and the other TSLib files are public downloads placed in `data/ts/` with
+the names below.
 
-### Synthetic drift suite (no download)
+### Synthetic drift suite (optional, no download)
+
+The paper's synthetic grids call `make_stream_fac` directly and need no files.
+`generate_synthetic.py` is a separate, optional generator for the
+`dataio.synthetic` npz loader used by a few non-paper experiments:
 
 ```bash
 py scripts/generate_synthetic.py      # writes data/synthetic/*.npz from pinned seeds
@@ -140,7 +145,7 @@ py scripts/bench_stream_real.py --clients 11,82,171   # -> results/stream_electr
 py scripts/bench_stream_extra.py                      # random clients -> results/stream_random_clients.csv
 py scripts/bench_stream_extra.py --horizon            # h=1,12 -> results/stream_horizon.csv
 py scripts/transient_test.py                          # -> results/transient_test.csv
-py scripts/diagnostics.py --diag all                  # vff|windup|sgd|coupling|rmt|rankdef|subopt|exactrisk
+py scripts/diagnostics.py --diag all                  # vff|windup|sgd|coupling|rmt|rankdef|alt_trust|subopt|exactrisk
 ```
 
 The revision checks added for the theory and robustness sections:

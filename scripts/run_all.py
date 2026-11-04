@@ -118,6 +118,8 @@ def main() -> None:
                     f"eeg:baseline-{ds}")
                 run([py, "scripts/bench_eeg_tier1.py", "--dataset", ds],
                     f"eeg:{ds}")
+                run([py, "scripts/eeg_grid_default_probe.py", "--dataset", ds],
+                    f"eeg:grid-default-{ds}")
             run([py, "scripts/bench_spar_eeg.py", "--dataset", "2a"],
                 "eeg:spar-legacy-2a")
             run([py, "scripts/bench_spar_eeg.py", "--dataset", "2b",
