@@ -172,7 +172,8 @@ def wiseft_preds(x, W_zero, W_ft, alpha):
 
 
 
-def run_kf_est(x, y, T_warm, q=1e-4, rho_init=1e-3, eta_R=0.01):
+def run_kf_est(x, y, T_warm, q=1e-4, rho_init=1e-3, eta_R=0.01,
+               feedback_lag=0):
     """Kalman random-walk with R ESTIMATED online from squared innovations
     (fast EMA, horizon ~1/eta_R) -- R is estimated from residuals, not an
     oracle. The noise-adaptive fair baseline."""
@@ -186,20 +187,22 @@ def run_kf_est(x, y, T_warm, q=1e-4, rho_init=1e-3, eta_R=0.01):
     preds = np.zeros(len(y) - T_warm)
     for t in range(T_warm, len(y)):
         P = P + q * np.eye(D)
+        u = max(0, t - feedback_lag)
         preds[t - T_warm] = x[t] @ W
-        r = y[t] - x[t] @ W
+        r = y[u] - x[u] @ W
         # Naive innovation-variance tracker: r^2 includes x^T P x, so this arm
         # tracks the innovation variance (not the covariance-matched R); that
         # is the benchmarked behaviour of the estimated-R Kalman.
         R_est = (1 - eta_R) * R_est + eta_R * (r * r)
-        k = P @ x[t]
-        K = k / (x[t] @ k + R_est)
+        k = P @ x[u]
+        K = k / (x[u] @ k + R_est)
         W = W + K * r
         P = P - np.outer(K, k)
     return preds
 
 
-def run_leaky_batch(x, y, T_warm, lam=0.995, ridge_frac=0.01):
+def run_leaky_batch(x, y, T_warm, lam=0.995, ridge_frac=0.01,
+                    feedback_lag=0):
     """Batch (information-form) solve of the exponentially-weighted LS with
     matched ridge: the cliff-figure control. Maintains the SAME alpha-window
     accumulator as leaky RLS but solves directly, immune to the covariance
@@ -213,9 +216,10 @@ def run_leaky_batch(x, y, T_warm, lam=0.995, ridge_frac=0.01):
     preds = np.zeros(len(y) - T_warm)
     for t in range(T_warm, len(y)):
         W = np.linalg.solve(A + ridge * n_eff * np.eye(D), B)
+        u = max(0, t - feedback_lag)
         preds[t - T_warm] = x[t] @ W
-        A = lam * A + np.outer(x[t], x[t])
-        B = lam * B + x[t] * y[t]
+        A = lam * A + np.outer(x[u], x[u])
+        B = lam * B + x[u] * y[u]
         n_eff = lam * n_eff + 1.0
     return preds
 

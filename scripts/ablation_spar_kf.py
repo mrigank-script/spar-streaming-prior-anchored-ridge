@@ -82,17 +82,19 @@ def main() -> None:
                        "seed": seed, "variant": vname,
                        "mse_overall": float(np.mean((preds - y_te) ** 2))}
                 for reg_name, reg in regs.items():
-                    if reg.stop > reg.start:
-                        row[f"mse_{reg_name}"] = float(
-                            np.mean((preds[reg] - y_te[reg]) ** 2))
+                    row[f"mse_{reg_name}"] = (
+                        float(np.mean((preds[reg] - y_te[reg]) ** 2))
+                        if reg.stop > reg.start else float("nan"))
                 rows.append(row)
             print(f"[{drift}/{spectrum}/{prior}] seed {seed} done "
                   f"({time.perf_counter() - t0:.0f}s)", flush=True)
 
     if rows:
-        pd.DataFrame(rows).to_csv(out_csv, mode="a",
-                                  header=not out_csv.exists(),
-                                  index=False)
+        cols = ["drift", "spectrum", "prior", "seed", "variant", "mse_overall"]
+        cols += [f"mse_{r}" for r in ("pre", "dur", "post")
+                 if any(f"mse_{r}" in row for row in rows)]
+        pd.DataFrame(rows).reindex(columns=cols).to_csv(
+            out_csv, mode="a", header=not out_csv.exists(), index=False)
     df = pd.read_csv(out_csv)
     print(f"saved results/ablation_spar_kf.csv ({len(df)} rows)")
 

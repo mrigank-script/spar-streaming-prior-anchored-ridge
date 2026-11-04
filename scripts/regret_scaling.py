@@ -67,7 +67,7 @@ def main() -> None:
     # log-log slope of per-step regret vs T (theory: -1/2)
     for decay in (0.0, 3.0):
         sub = df[df.spectrum_decay == decay]
-        slope = np.polyfit(np.log(sub["T"]), np.log(sub["per_step_regret"]), 1)[0]
+        slope = np.polyfit(np.log(sub["T"]), np.log(sub["per_step_regret"].clip(lower=1e-300)), 1)[0]
         print(f"decay={decay}: log-log slope of per-step regret = {slope:.3f}"
               f"  (theory: -0.5)")
 

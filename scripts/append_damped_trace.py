@@ -130,8 +130,8 @@ def main():
             ]:
                 preds = fn()
                 row = {"spectrum": spectrum, "drift": drift, "prior": prior,
-                       "noise": noise, "seed": seed, "method": name,
-                       "D": D, "T": T, "wall_s": time.perf_counter() - t0}
+                       "seed": seed, "method": name, "D": D, "T": T,
+                       "wall_s": time.perf_counter() - t0}
                 for reg_name, reg in regs.items():
                     row[f"mse_{reg_name}"] = float(
                         np.mean((preds[reg] - y_te[reg]) ** 2)) \

@@ -166,7 +166,7 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
                 rho_drift_floor=None, use_cusum=True, use_ref=True,
                 adaptive_rho=True, debias_variance_floor=False,
                 rho_pin=None, w_pin=None, prediction_units=False,
-                sticky_floor=False, drift_margin=0.05):
+                sticky_floor=False, drift_margin=0.05, feedback_lag=0):
     """SPAR-Pull: both estimators self-calibrated from measured statistics.
 
     Estimator 1 (anchor strength, conflict theorem):
@@ -282,7 +282,8 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
         rhos[t - T_warm] = rho
         ws[t - T_warm] = w
 
-        r_t = y[t] - x[t] @ W
+        u = max(0, t - feedback_lag)
+        r_t = y[u] - x[u] @ W
         sigma2_fast = (1 - eta_f) * sigma2_fast + eta_f * (r_t * r_t)
         if sticky_floor:
             # Scale-free floor: update the slow baseline only while no drift
@@ -303,8 +304,8 @@ def run_spar_kf(x, y, T_warm, G_init=None, refresh=True, refresh_every=50, gamma
             G_ref = (1 - eta_ref) * G_ref + eta_ref * W
             cyc += 1
 
-        A = alpha * A + np.outer(x[t], x[t])
-        B = alpha * B + x[t] * y[t]
+        A = alpha * A + np.outer(x[u], x[u])
+        B = alpha * B + x[u] * y[u]
         n_eff = alpha * n_eff + 1.0
         step += 1
 

@@ -90,6 +90,7 @@ def main() -> None:
     if not args.fresh and OUT.exists():
         rows = pd.read_csv(OUT).to_dict("records")
     print(f"clients: {want}", flush=True)
+    done = {(r["client"], r["method"]) for r in rows}
 
     t_all = time.perf_counter()
     for client in want:
@@ -99,6 +100,8 @@ def main() -> None:
               flush=True)
 
         def record(method, preds, extra=None):
+            if (client, method) in done:
+                return
             err = (preds - y[T_WARM:]) ** 2
             row = dict(client=client, D=D, method=method,
                        T_eval=int(len(y) - T_WARM),
@@ -133,7 +136,8 @@ def main() -> None:
 
         print(f"  [task wall {time.perf_counter() - t_all:.0f}s]", flush=True)
 
-    df = pd.DataFrame(rows)
+    df = pd.DataFrame(rows).drop_duplicates(
+        subset=["client", "method"], keep="last")
     print()
     print(df.groupby("method")[["mse", "mse_last2000"]].mean()
           .round(5).to_string())

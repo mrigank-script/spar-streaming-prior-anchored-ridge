@@ -3,7 +3,7 @@
 Extends the electricity benchmark (which reports three percentile clients) to
 (a) a seeded random sample of clients, so the untuned transfer is not specific
 to the three reported percentiles, and (b) an h-step-ahead target for
-h in {1, 6, 12, 24}, which probes the lag/variance tradeoff across horizons.
+h in {1, 12}, which probes the lag/variance tradeoff across horizons.
 The arms and grid-default control parameters are unchanged.
 
 Writes results/stream_random_clients.csv, results/stream_horizon.csv, and
@@ -50,13 +50,16 @@ def build_h(vals, client, h):
     return X[:T_END], y[:T_END]
 
 
-def arms(x, y):
+def arms(x, y, feedback_lag=0):
     out = {}
-    preds, _ = run_spar_kf(x, y, T_WARM, G_init=None, **GRID)
+    preds, _ = run_spar_kf(x, y, T_WARM, G_init=None,
+                           feedback_lag=feedback_lag, **GRID)
     out["SPAR-Pull"] = preds
     for lam in (0.999, 0.99):
-        out[f"leaky-info[{lam}]"] = run_leaky_batch(x, y, T_WARM, lam=lam)
-    out["kf-slow[q=1e-05]"] = run_kf_est(x, y, T_WARM, q=1e-5, eta_R=5e-5)
+        out[f"leaky-info[{lam}]"] = run_leaky_batch(
+            x, y, T_WARM, lam=lam, feedback_lag=feedback_lag)
+    out["kf-slow[q=1e-05]"] = run_kf_est(
+        x, y, T_WARM, q=1e-5, eta_R=5e-5, feedback_lag=feedback_lag)
     return out
 
 
@@ -103,7 +106,7 @@ def main() -> None:
         for h in HORIZONS:
             for client in picks:
                 x, y = build_h(vals, client, h)
-                task = arms(x, y)
+                task = arms(x, y, feedback_lag=h)
                 for name, preds in task.items():
                     hrows.append(dict(client=int(client), D=x.shape[1],
                                       horizon=h, method=name,
