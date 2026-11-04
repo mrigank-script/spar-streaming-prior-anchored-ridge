@@ -22,7 +22,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from rls_baselines import (make_stream_fac, run_adam, run_arow, run_df,  # noqa: E402
                            run_kf, run_leaky_batch, run_rls, run_spar_diag,
-                           run_spar_eg, run_spar_kf, run_sgd)
+                           run_spar_kf, run_sgd)
 from spar_test import run_spar_v2  # noqa: E402
 
 
@@ -35,7 +35,7 @@ def _time(fn, x, y, T_warm, n_check=3):
     return best
 
 
-def time_method(fn, x, y, T_warm, x2, y2, n_check=3):
+def time_method(fn, x, y, T_warm, x2, y2, n_check=1):
     """Marginal streaming cost: difference of two stream lengths so the
     warm-up fit cancels; returns microseconds per step."""
     dt = _time(fn, x2, y2, T_warm, n_check) - _time(fn, x, y, T_warm, n_check)
@@ -65,7 +65,6 @@ def main() -> None:
                 x, y, w, G_init=None, refresh_every=10, resid_fast=30,
                 rho_drift_floor=0.02, debias_variance_floor=True,
                 prediction_units=True)[0],
-            "spar_eg": lambda x, y, w: run_spar_eg(x, y, w, G_init=None),
             "leaky_batch": lambda x, y, w: run_leaky_batch(
                 x, y, w, lam=0.99),
         }
