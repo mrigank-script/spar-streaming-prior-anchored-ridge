@@ -87,7 +87,8 @@ def main() -> None:
                & agg.prior.isin(["oracle", "warm", "adversarial"])]
     fam_order = ["warm", "no_anchor", "best_leaky", "best_df", "best_arow",
                  "best_kf", "best_grad", "best_wiseft",
-                 "spar_scalar", "spar_diag", "spar_kf", "spar_scalar_a1"]
+                 "spar_scalar", "spar_diag", "spar_kf", "spar_scalar_a1",
+                 "spar_pull", "spar_eg", "spar_eg_plus"]
     for fam in fam_order:
         g = main[main.family == fam]
         if g.empty:
@@ -135,8 +136,9 @@ def main() -> None:
     wins_s = 0
     wins_d = 0
     wins_k = 0
+    wins_p = 0
     n_cfg = 0
-    for (spectrum, drift, prior, noise), g in agg.groupby(
+    for (spectrum, drift, prior, noise), g in main.groupby(
             ["spectrum", "drift", "prior", "noise"], dropna=False):
         gb = g[g.family.isin(base_fams)]
         if gb.empty:
@@ -145,15 +147,19 @@ def main() -> None:
         sc = g[g.family == "spar_scalar"].mse_overall.mean()
         dg = g[g.family == "spar_diag"].mse_overall.mean()
         kfam = g[g.family == "spar_kf"].mse_overall.mean()
+        pfam = g[g.family == "spar_pull"].mse_overall.mean()
         n_cfg += 1
         wins_s += int(sc < bb)
         wins_d += int(dg < bb)
         wins_k += int(kfam < bb)
-        print(f"[{drift}/{spectrum}/{prior}] best_base={bb:.4f} "
+        wins_p += int(pfam < bb)
+        print(f"[{drift}/{spectrum}/{prior}/{noise}] best_base={bb:.4f} "
+              f"spar_pull={pfam:.4f} {'WIN' if pfam < bb else 'loss'} | "
               f"spar_scalar={sc:.4f} {'WIN' if sc < bb else 'loss'} | "
               f"spar_diag={dg:.4f} {'WIN' if dg < bb else 'loss'} | "
               f"spar_kf={kfam:.4f} {'WIN' if kfam < bb else 'loss'}")
-    print(f"\nSPAR_scalar beats best-of-family baselines in {wins_s}/{n_cfg} configs")
+    print(f"\nSPAR_pull    beats best-of-family baselines in {wins_p}/{n_cfg} configs")
+    print(f"SPAR_scalar beats best-of-family baselines in {wins_s}/{n_cfg} configs")
     print(f"SPAR_diag    beats best-of-family baselines in {wins_d}/{n_cfg} configs")
     print(f"SPAR_kf      beats best-of-family baselines in {wins_k}/{n_cfg} configs")
 

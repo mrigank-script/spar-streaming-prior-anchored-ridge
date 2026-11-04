@@ -53,17 +53,21 @@ def main() -> None:
     print(f"{'spec':<8} {'floor':<9} | {'mean w':>8} {'mean rho':>9} "
           f"{'tail MSE':>9} {'frac open':>9}")
     for kind in ("iso", "decay3"):
-        x, y, w0 = sustained_stream(kind)
-        G_init = w0 + 0.02 * np.random.default_rng(1).normal(size=D)
-        y_te = y[T_WARM:]
         for sticky in (False, True):
-            preds, rhos, ws = run_spar_kf(
-                x, y, T_WARM, G_init=G_init, sticky_floor=sticky, **ARM)
-            tail = slice(-30000, None)
-            w_tail = float(np.mean(ws[tail]))
-            rho_tail = float(np.mean(rhos[tail]))
-            mse_tail = float(np.mean((preds[tail] - y_te[tail]) ** 2))
-            frac_open = float(np.mean(ws[tail] > 1.5 * 5e-4))
+            wts, rts, mts, fos = [], [], [], []
+            for seed in range(5):
+                x, y, w0 = sustained_stream(kind, seed=seed)
+                G_init = w0 + 0.02 * np.random.default_rng(1 + seed).normal(size=D)
+                y_te = y[T_WARM:]
+                preds, rhos, ws = run_spar_kf(
+                    x, y, T_WARM, G_init=G_init, sticky_floor=sticky, **ARM)
+                tail = slice(-30000, None)
+                wts.append(float(np.mean(ws[tail])))
+                rts.append(float(np.mean(rhos[tail])))
+                mts.append(float(np.mean((preds[tail] - y_te[tail]) ** 2)))
+                fos.append(float(np.mean(ws[tail] > 1.5 * 5e-4)))
+            w_tail, rho_tail = float(np.mean(wts)), float(np.mean(rts))
+            mse_tail, frac_open = float(np.mean(mts)), float(np.mean(fos))
             rows.append(dict(spectrum=kind, sticky_floor=sticky,
                              mean_w=w_tail, mean_rho=rho_tail,
                              tail_mse=mse_tail, frac_open=frac_open))

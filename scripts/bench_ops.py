@@ -1,8 +1,10 @@
-"""Per-step cost table: wall-clock microseconds per step for every method
-at D in {128, 512, 1024, 2048}, 300 streamed steps each.
+"""Per-step cost table: wall-clock microseconds per streamed step for every
+method at D in {128, 512, 1024, 2048}.
 
-Produces the appendix per-step cost table: the anchored arms are
-O(D^2)/step with O(D^3) only at the refresh cadence (amortized here).
+The warm-up is differenced out (two stream lengths), so the reported figure
+is the marginal streaming cost.  ``spar_scalar(solve)`` forms an explicit
+D x D solve every step (O(D^3)); ``spar_diag`` is O(D^2)/step with O(D^3)
+only at the refresh cadence; ``spar_pull`` shares the O(D^3) solve family.
 """
 
 import os
@@ -19,18 +21,25 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from rls_baselines import (make_stream_fac, run_adam, run_arow, run_df,  # noqa: E402
-                           run_kf, run_rls, run_spar_diag, run_sgd)
+                           run_kf, run_leaky_batch, run_rls, run_spar_diag,
+                           run_spar_eg, run_spar_kf, run_sgd)
 from spar_test import run_spar_v2  # noqa: E402
 
 
-def time_method(fn, x, y, T_warm, n_check=3):
+def _time(fn, x, y, T_warm, n_check=3):
     best = np.inf
     for _ in range(n_check):
         t0 = time.perf_counter()
         fn(x, y, T_warm)
-        dt = time.perf_counter() - t0
-        best = min(best, dt)
-    return best / max(len(y) - T_warm, 1) * 1e6  # us per step
+        best = min(best, time.perf_counter() - t0)
+    return best
+
+
+def time_method(fn, x, y, T_warm, x2, y2, n_check=3):
+    """Marginal streaming cost: difference of two stream lengths so the
+    warm-up fit cancels; returns microseconds per step."""
+    dt = _time(fn, x2, y2, T_warm, n_check) - _time(fn, x, y, T_warm, n_check)
+    return dt / max(len(y2) - len(y), 1) * 1e6
 
 
 def main() -> None:
@@ -39,6 +48,8 @@ def main() -> None:
         T, T_warm = 800, 200
         x, y, w_true, t1, t2, Q0, lam0 = make_stream_fac(
             seed=0, D=D, T=T, spectrum="decay3", drift="none")
+        x2, y2, *_ = make_stream_fac(
+            seed=0, D=D, T=T + 500, spectrum="decay3", drift="none")
         arms = {
             "leaky_rls": lambda x, y, w: run_rls(x, y, w, lam=0.997),
             "df": lambda x, y, w: run_df(x, y, w, lam_f=0.95),
@@ -50,9 +61,16 @@ def main() -> None:
                 x, y, w, alpha=0.997, refresh_every=50),
             "spar_diag(O2)": lambda x, y, w: run_spar_diag(
                 x, y, w, alpha=0.997, refresh_every=50),
+            "spar_pull": lambda x, y, w: run_spar_kf(
+                x, y, w, G_init=None, refresh_every=10, resid_fast=30,
+                rho_drift_floor=0.02, debias_variance_floor=True,
+                prediction_units=True)[0],
+            "spar_eg": lambda x, y, w: run_spar_eg(x, y, w, G_init=None),
+            "leaky_batch": lambda x, y, w: run_leaky_batch(
+                x, y, w, lam=0.99),
         }
         for name, fn in arms.items():
-            us = time_method(fn, x, y, T_warm)
+            us = time_method(fn, x, y, T_warm, x2, y2)
             rows.append({"D": D, "method": name, "us_per_step": us})
             print(f"D={D:>5} {name:<20} {us:>9.1f} us/step", flush=True)
 

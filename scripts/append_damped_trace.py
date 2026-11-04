@@ -57,8 +57,12 @@ def run_spar_kf_damped(x, y, T_warm, G_init=None, refresh_every=10, resid_fast=3
             mu_bar = float(np.trace(Abar) / D) + 1e-12
             # DAMPED trace: use (Abar + rho*I)^-1 instead of Abar^-1
             rho_prev = max(rho, 1e-6)
-            tr_inv_damped = float(np.trace(np.linalg.inv(Abar + rho_prev * np.eye(D))))
-            V_hat = sigma2_base * tr_inv_damped / n_eff
+            Minv = np.linalg.inv(Abar + rho_prev * np.eye(D))
+            tr_inv_damped = float(np.trace(Minv))
+            # parameter-space ridge variance tr(A (A + rho I)^-2); the inverse
+            # trace injects a spurious 1/rho per null direction on rankdef
+            tr_var_damped = float(np.trace(Abar @ (Minv @ Minv)))
+            V_hat = sigma2_base * tr_var_damped / n_eff
             W_data = np.linalg.solve(A + n_eff * 1e-6 * np.eye(D), B)
             E_resid = max(0.0, sigma2_fast - sigma2_base)
 

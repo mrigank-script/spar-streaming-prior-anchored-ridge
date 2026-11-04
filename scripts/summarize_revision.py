@@ -133,10 +133,14 @@ def main() -> None:
            .groupby(["spectrum", "drift", "prior", "method"])
            .mse_overall.mean().unstack())
     if {"spar_pull", "spar_eg_plus"} <= set(piv.columns):
-        diff = piv["spar_eg_plus"] - piv["spar_pull"]
-        t = stats.ttest_rel(piv["spar_eg_plus"], piv["spar_pull"])
-        w = stats.wilcoxon(piv["spar_eg_plus"], piv["spar_pull"])
-        print(f"EG+ wins {int((diff < 0).sum())}/{len(diff)}; "
+        # the three priors share one underlying stream, so average them
+        # before pairing: the independent units are the 9 (spectrum, drift)
+        # blocks, not the 27 (spectrum, drift, prior) cells.
+        piv9 = piv.groupby(["spectrum", "drift"]).mean()
+        diff = piv9["spar_eg_plus"] - piv9["spar_pull"]
+        t = stats.ttest_rel(piv9["spar_eg_plus"], piv9["spar_pull"])
+        w = stats.wilcoxon(piv9["spar_eg_plus"], piv9["spar_pull"])
+        print(f"EG+ wins {int((diff < 0).sum())}/{len(diff)} independent blocks; "
               f"mean delta={diff.mean():+.4f}; t p={t.pvalue:.4g}; "
               f"Wilcoxon p={w.pvalue:.4g}")
 

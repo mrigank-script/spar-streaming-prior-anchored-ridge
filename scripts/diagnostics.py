@@ -202,7 +202,7 @@ COUPLING_CONFIGS = [("abrupt", "decay3", "warm", "gauss"),
                     ("abrupt", "iso", "adversarial", "gauss"),
                     ("osc", "iso", "warm", "gauss")]
 COUPLING_ARM = dict(refresh_every=10, resid_fast=30, rho_drift_floor=0.02,
-                    debias_variance_floor=True)
+                    debias_variance_floor=True, prediction_units=True)
 RHO_PIN_CLAMP = (1e-4, 10.0)
 COUPLING_TAIL = 1000
 COUPLING_OUT = RES / "coupling_diag.csv"
@@ -263,7 +263,8 @@ def diag_coupling() -> None:
                       if d_rho > 0 else float("nan"))
 
             u_lo, u_hi = 0.9 * u_base, 1.1 * u_base
-            w_pin_lo, w_pin_hi = u_lo ** (1.0 / 3.0), u_hi ** (1.0 / 3.0)
+            w_pin_lo = float(np.clip(u_lo ** (1.0 / 3.0), 5e-4, 0.05))
+            w_pin_hi = float(np.clip(u_hi ** (1.0 / 3.0), 5e-4, 0.05))
             rho_star_lo, _, mse_w_lo, pw_lo = _run_pin(
                 x, y, T_warm, G_init, y_te, w_pin=w_pin_lo)
             rho_star_hi, _, mse_w_hi, pw_hi = _run_pin(
@@ -393,7 +394,7 @@ def rmt_mc_fixed(kind, w, rho, n_streams=40):
     accumulator, oracle anchor, fresh-test excess risk."""
     excesses = []
     for seed in range(n_streams):
-        x, y, w_true, *_ = make_stream_fac(
+        x, y, w_true, _t1, _t2, Q0, lam0 = make_stream_fac(
             seed=seed, D=RMT_D, T=RMT_T, sigma=np.sqrt(RMT_SIGMA2),
             spectrum=kind, drift="none", noise="gauss")
         w_star = w_true[-1]
@@ -402,9 +403,8 @@ def rmt_mc_fixed(kind, w, rho, n_streams=40):
         A = Xw.T @ Xw
         B = Xw.T @ (y * np.sqrt(sw))
         W = np.linalg.solve(A + rho * np.eye(RMT_D), B + rho * w_star)
-        Sig_hat = np.cov(x, rowvar=False)
-        dW = W - w_star
-        excesses.append(float(dW @ Sig_hat @ dW))
+        proj = Q0.T @ (W - w_star)               # population Sigma = Q0 lam Q0^T
+        excesses.append(float(np.sum(lam0 * proj ** 2)))
     return float(np.mean(excesses))
 
 
@@ -482,7 +482,7 @@ def rmt_conflict_point(kind, w, rho, dcoef, n_streams=40):
     eye = np.eye(RMT_D)
     tot_d, tot_o = [], []
     for seed in range(n_streams):
-        x, y, w_true, _t1, _t2, Q0, _lam0 = make_stream_fac(
+        x, y, w_true, _t1, _t2, Q0, lam0 = make_stream_fac(
             seed=seed, D=RMT_D, T=RMT_T, sigma=np.sqrt(RMT_SIGMA2),
             spectrum=kind, drift="none", noise="gauss")
         w_star = w_true[-1]
@@ -492,9 +492,10 @@ def rmt_conflict_point(kind, w, rho, dcoef, n_streams=40):
         delta = Q0 @ dcoef
         Wd = np.linalg.solve(A + rho * eye, B + rho * (w_star + delta))
         Wo = np.linalg.solve(A + rho * eye, B + rho * w_star)
-        Sig = np.cov(x, rowvar=False)
-        tot_d.append(float((Wd - w_star) @ Sig @ (Wd - w_star)))
-        tot_o.append(float((Wo - w_star) @ Sig @ (Wo - w_star)))
+        pd_ = Q0.T @ (Wd - w_star)
+        po_ = Q0.T @ (Wo - w_star)
+        tot_d.append(float(np.sum(lam0 * pd_ ** 2)))
+        tot_o.append(float(np.sum(lam0 * po_ ** 2)))
     return float(np.mean(tot_d)), float(np.mean(tot_o))
 
 
@@ -748,7 +749,7 @@ def diag_subopt() -> None:
         w0 = k_omega / k
         for s in (0.02, 0.05, 0.1, 0.2, 0.3):
             c = sigma2 * D * (1 - s) ** 2
-            nu = float(np.sqrt((c * w0 ** 3 / 4) / D))
+            nu = float(np.sqrt(c * w0 ** 3 / ((2 - w0) ** 2 * D)))
             w = np.linspace(w0 * 0.05, min(0.9, w0 * 20), 200000)
             r = (1 - w) ** k
             a = s * (2 - s)
@@ -761,9 +762,10 @@ def diag_subopt() -> None:
             cv = sigma2 * D * (w / (2 - w))
             Rs = cv * (1 - s) ** 2 + D * (nu / w) ** 2
             eps = risk - Rs
-            i0 = int(np.argmin(np.abs(w - w0)))
-            bound = float((Rs[i0] - Rs.min()) + (eps[i0] - eps.min())) \
-                / float(risk.min())
+            Rs2 = 4 * c / (2 - w) ** 3 + 6 * D * nu ** 2 / w ** 4
+            m = float(Rs2.min())                 # min R_s'' on the interval
+            eps1 = float(np.max(np.abs(np.gradient(eps, w))))
+            bound = float(eps1 ** 2 / (2 * m)) / float(risk.min())
             rows.append({"k_omega": k_omega, "omega": w0, "s": s,
                          "rel_gap": float(gap), "bound": float(bound),
                          "certified": bool(bound >= gap)})
