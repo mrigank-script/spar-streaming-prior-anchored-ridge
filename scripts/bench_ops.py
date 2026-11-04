@@ -9,6 +9,7 @@ only at the refresh cadence; ``spar_pull`` shares the O(D^3) solve family.
 
 import os
 os.environ.setdefault("JAX_ENABLE_X64", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "4")
 
 from pathlib import Path
 import sys

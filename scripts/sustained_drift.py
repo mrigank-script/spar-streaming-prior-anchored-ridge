@@ -14,6 +14,7 @@ Writes results/sustained_drift.csv.
 
 import os
 os.environ.setdefault("JAX_ENABLE_X64", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "4")
 
 from pathlib import Path
 import sys
