@@ -71,8 +71,15 @@ def main() -> None:
                        prev["method"]))
     rows = []
     t0 = time.perf_counter()
+    arm_names = [
+        "spar_pull", "spar_eg", "spar_eg_plus", "kf_est",
+        "kf_est_slow[q=1e-4]", "kf_true[q=1e-4]", "leaky[0.997]",
+        "leaky[0.995]", "leaky_batch[0.99]"]
     for drift, spectrum, prior, noise, mismatch in MISMATCH_CONFIGS:
         for seed in range(5):
+            if all((spectrum, drift, prior, noise, mismatch, seed, n) in done
+                   for n in arm_names):
+                continue
             x, y, w_true, t1, t2, Q0, lam0 = make_stream_fac(
                 seed=seed, D=D, T=T, sigma=0.1, spectrum=spectrum,
                 drift=drift, noise=noise, mismatch=mismatch)
@@ -133,17 +140,25 @@ def main() -> None:
 
     # compare with the matched case (from the main grid)
     print("\n=== reference: matched case (from main grid, same configs) ===")
-    try:
-        frames = [pd.read_csv(RES / f"factorial_{t}.csv")
-                  for t in ("d_abrupt", "d_covrot", "d_both", "extras")]
-        df2 = pd.concat(frames, ignore_index=True)
-        for name in ("spar_pull", "spar_eg", "kf_est", "leaky[0.997]"):
-            sub = df2[(df2.method == name) & (df2.spectrum == "decay3")
-                      & (df2.drift == "abrupt")]
+    frames = [pd.read_csv(RES / f"factorial_{t}.csv")
+              for t in ("d_abrupt", "d_covrot", "d_both", "extras",
+                        "pu_refresh")
+              if (RES / f"factorial_{t}.csv").exists()]
+    if frames:
+        df2 = pd.concat(frames, ignore_index=True).drop_duplicates(
+            subset=["spectrum", "drift", "prior", "noise", "seed", "method"],
+            keep="last")
+        for name_mis, name_main in (("spar_pull", "spar_pull"),
+                                    ("spar_eg", "spar_eg"),
+                                    ("kf_est", "kf_est[q=1e-4]"),
+                                    ("leaky[0.997]", "leaky[0.997]")):
+            sub = df2[(df2.method == name_main)
+                      & (df2.spectrum == "decay3")
+                      & (df2.drift == "abrupt")
+                      & (df2.prior == "warm") & (df2.noise == "gauss")]
             if len(sub):
-                print(f"  {name:<20} overall={sub.mse_overall.mean():10.4f}")
-    except Exception:
-        pass
+                print(f"  {name_mis:<20} "
+                      f"overall={sub.mse_overall.mean():10.4f}")
 
 
 if __name__ == "__main__":

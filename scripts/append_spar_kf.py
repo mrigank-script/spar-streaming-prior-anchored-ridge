@@ -1,4 +1,4 @@
-"""Append the SPAR-Pull arm to the completed factorial grid (same streams,
+"""Append the legacy `spar_kf` arm to the completed factorial grid (same streams,
 same seeds — deterministic generator guarantees identical data)."""
 
 import os

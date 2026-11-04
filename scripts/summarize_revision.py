@@ -105,7 +105,7 @@ def main() -> None:
         "VFF information": "vff_info[",
     }
     for name, pat in fams.items():
-        if pat.startswith("("):
+        if name == "SGD/Adam":
             sub = main[main.method.str.match(pat)]
         else:
             sub = main[main.method.str.startswith(pat)]

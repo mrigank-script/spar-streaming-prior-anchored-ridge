@@ -50,7 +50,6 @@ MAIN = [(d, s, p, "gauss")
 EXTRA = [("exdeath", "decay3", "warm", "gauss"), ("osc", "iso", "warm", "gauss"),
          ("covrot", "decay3", "warm", "t3"), ("none", "iso", "warm", "gauss")]
 
-SPLIT_METHODS = ("spar_kf2", "kf_est[q=", "leaky_batch[", "spar_eg")
 
 
 def run_vff_info(x, y, T_warm, lam0=1.0, lam_min=0.95, ridge_frac=0.01):
@@ -65,7 +64,6 @@ def run_vff_info(x, y, T_warm, lam0=1.0, lam_min=0.95, ridge_frac=0.01):
     r_warm = y[:T_warm] - x[:T_warm] @ np.linalg.solve(
         A + n_eff * ridge_frac * np.eye(D), B)
     sigma0 = float(np.var(r_warm)) + 1e-12
-    alpha = 1.0
     preds = np.zeros(len(y) - T_warm)
     for t in range(T_warm, len(y)):
         phi = x[t]
@@ -74,7 +72,7 @@ def run_vff_info(x, y, T_warm, lam0=1.0, lam_min=0.95, ridge_frac=0.01):
         preds[t - T_warm] = pred
         e = y[t] - pred
         lam = float(np.clip(1.0 - (e * e) / (lam0 * sigma0), lam_min, 1.0))
-        alpha = 1.0 - (1.0 - lam)
+        alpha = lam
         A = alpha * A + np.outer(phi, phi)
         B = alpha * B + phi * y[t]
         n_eff = alpha * n_eff + 1.0

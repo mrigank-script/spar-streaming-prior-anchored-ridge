@@ -49,7 +49,6 @@ def vff_info_traced(x, y, T_warm, lam_min=0.99, lam0=1.0,
         A + n_eff * ridge_frac * np.eye(D), B)
     sigma0 = float(np.var(r_warm)) + 1e-12
     xi = lam0 * sigma0
-    alpha = 1.0
     preds = np.zeros(len(y) - T_warm)
     lams_t = np.zeros(len(y) - T_warm)
     for t in range(T_warm, len(y)):
@@ -62,7 +61,7 @@ def vff_info_traced(x, y, T_warm, lam_min=0.99, lam0=1.0,
         lams_t[t - T_warm] = lam
         if recursive_xi:
             xi = (1.0 - eta_xi) * xi + eta_xi * (e * e)
-        alpha = 1.0 - (1.0 - lam)
+        alpha = lam
         A = alpha * A + np.outer(phi, phi)
         B = alpha * B + phi * y[t]
         n_eff = alpha * n_eff + 1.0

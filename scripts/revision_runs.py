@@ -97,18 +97,21 @@ def run_grid(task):
                 seed=seed)
     meta = lambda m: {**base, "method": m, "D": D, "T": T}
     rows = []
+    t = time.perf_counter()
     preds, _, _ = run_spar_kf(
         x, y, T_WARM, G_init=G, refresh_every=10, resid_fast=30,
         rho_drift_floor=0.02, debias_variance_floor=True,
         prediction_units=True, return_diag=True)
     rows.append(_row(meta("spar_pull"), preds, y_te, regs,
-                     t1p, time.perf_counter() - t0))
+                     t1p, time.perf_counter() - t))
+    t = time.perf_counter()
     preds_eg = run_spar_eg(x, y, T_WARM, G_init=G)
     rows.append(_row(meta("spar_eg"), preds_eg, y_te,
-                     regs, t1p, time.perf_counter() - t0))
+                     regs, t1p, time.perf_counter() - t))
+    t = time.perf_counter()
     preds_egp = run_spar_eg(x, y, T_WARM, G_init=G, extra_preds=preds)
     rows.append(_row(meta("spar_eg_plus"), preds_egp, y_te,
-                     regs, t1p, time.perf_counter() - t0))
+                     regs, t1p, time.perf_counter() - t))
     for name, kind, value in BASE_METHODS:
         t1 = time.perf_counter()
         if kind == "df":
@@ -130,15 +133,17 @@ def run_stress(task):
                 seed=seed)
     meta = lambda m: {**base, "method": m, "D": D, "T": T}
     rows = []
+    t = time.perf_counter()
     preds, _, _ = run_spar_kf(
         x, y, T_WARM, G_init=G, refresh_every=10, resid_fast=30,
         rho_drift_floor=0.02, debias_variance_floor=True,
         prediction_units=True, return_diag=True)
     rows.append(_row(meta("spar_pull"), preds, y_te, regs,
-                     t1p, time.perf_counter() - t0))
+                     t1p, time.perf_counter() - t))
+    t = time.perf_counter()
     preds_egp = run_spar_eg(x, y, T_WARM, G_init=G, extra_preds=preds)
     rows.append(_row(meta("spar_eg_plus"), preds_egp, y_te,
-                     regs, t1p, time.perf_counter() - t0))
+                     regs, t1p, time.perf_counter() - t))
     return "extras", rows
 
 
@@ -146,6 +151,7 @@ def run_abl(task):
     drift, spectrum, prior, noise, seed, variant = task
     x, y, G, y_te, regs, t1p = _stream(spectrum, drift, prior, noise, seed)
     kw = ABL_VARIANTS[variant]
+    t_arm = time.perf_counter()
     preds = run_spar_kf(
         x, y, T_WARM, G_init=G,
         refresh_every=kw.get("refresh_every", 10),
@@ -158,7 +164,7 @@ def run_abl(task):
                         "debias_variance_floor")})[0]
     row = _row(dict(spectrum=spectrum, drift=drift, prior=prior, noise=noise,
                     seed=seed, method=variant, D=D, T=T), preds, y_te, regs,
-                t1p, include_early=True)
+                t1p, time.perf_counter() - t_arm, include_early=True)
     return "abl", [row]
 
 
@@ -177,31 +183,38 @@ def append(dest, rows):
         path, mode="a", header=not path.exists(), index=False)
 
 
-def existing_keys(suite):
-    files = [f"factorial_d_{d}.csv" for d in ("abrupt", "covrot", "both")]
-    files += ["factorial_extras.csv", "factorial_pu_refresh.csv",
-              "ablation_spar_pull.csv"]
-    frames = []
-    for f in files:
-        p = RES / f
-        if p.exists():
-            frames.append(pd.read_csv(p))
-    if not frames:
+DEST_FILES = [f"factorial_d_{d}.csv" for d in ("abrupt", "covrot", "both")]
+DEST_FILES += ["factorial_extras.csv", "factorial_pu_refresh.csv"]
+NEED_MAIN = {"spar_pull", "spar_eg", "spar_eg_plus", *BASE_METHOD_NAMES}
+NEED_STRESS = {"spar_pull", "spar_eg_plus"}
+
+
+def dest_for(drift, noise):
+    if drift in ("abrupt", "covrot", "both") and noise == "gauss":
+        return f"factorial_d_{drift}.csv"
+    return "factorial_extras.csv"
+
+
+def load_done(dest):
+    p = RES / dest
+    if not p.exists():
         return set()
-    df = pd.concat(frames, ignore_index=True)
+    df = pd.read_csv(p)
+    return set(zip(df["spectrum"], df["drift"], df["prior"], df["noise"],
+                   df["seed"], df["method"]))
+
+
+def existing_keys(suite):
+    """Per-destination method sets: a key counts as complete only inside its
+    own file, so methods split across files never mask a missing row."""
     if suite == "ablation":
-        # keyed by (drift, spectrum, prior, seed, variant) so a re-run skips
-        # every variant that is already present.
+        p = RES / "ablation_spar_pull.csv"
+        if not p.exists():
+            return set()
+        df = pd.read_csv(p)
         return set(zip(df["drift"], df["spectrum"], df["prior"],
                        df["seed"], df["method"]))
-    need_main = {"spar_pull", "spar_eg", "spar_eg_plus", *BASE_METHOD_NAMES}
-    need_stress = {"spar_pull", "spar_eg_plus"}
-    out = set()
-    for key, g in df.groupby(["spectrum", "drift", "prior", "noise", "seed"]):
-        stress = key[3] == "t3" or key[1] in ("exdeath", "osc", "none")
-        if (need_stress if stress else need_main) <= set(g["method"]):
-            out.add(tuple(key))
-    return out
+    return {d: load_done(d) for d in DEST_FILES}
 
 
 def dispatch_grid(t):
@@ -219,18 +232,19 @@ def main():
     done = existing_keys(args.suite)
     tasks = []
     if args.suite == "grid":
-        for drift, spectrum, prior, noise in MAIN_GRID:
+        for drift, spectrum, prior, noise in MAIN_GRID + STRESS:
+            stress = noise == "t3" or drift in ("exdeath", "osc", "none")
+            need = NEED_STRESS if stress else NEED_MAIN
+            dest = dest_for(drift, noise)
+            have_all = done.get(dest, set())
             for seed in range(5):
-                key = (spectrum, drift, prior, noise, seed)
-                if key not in done:
-                    tasks.append(("grid", spectrum, drift, prior, noise, seed))
-        for drift, spectrum, prior, noise in STRESS:
-            for seed in range(5):
-                key = (spectrum, drift, prior, noise, seed)
-                if key not in done:
-                    tasks.append(("stress", spectrum, drift, prior, noise,
-                                  seed))
-
+                have = {m for (s, d, p, n, sd, m) in have_all
+                        if (s, d, p, n, sd)
+                        == (spectrum, drift, prior, noise, seed)}
+                if need <= have:
+                    continue
+                tasks.append(("stress" if stress else "grid",
+                              spectrum, drift, prior, noise, seed))
         fn = dispatch_grid
     else:
         for cfg in ABL_CFG:
@@ -243,7 +257,7 @@ def main():
 
     if args.limit:
         tasks = tasks[:args.limit]
-    print(f"suite={args.suite} pending={len(tasks)} done_keys={len(done)} "
+    print(f"suite={args.suite} pending={len(tasks)} "
           f"workers={args.workers}", flush=True)
     t0 = time.perf_counter()
     with ProcessPoolExecutor(max_workers=args.workers) as ex:
@@ -251,10 +265,18 @@ def main():
         for i, fut in enumerate(as_completed(futs), 1):
             dest, rows = fut.result()
             if args.suite == "ablation":
-                append("ablation_spar_pull.csv", rows)
+                if rows:
+                    append("ablation_spar_pull.csv", rows)
             else:
-                append(f"factorial_d_{dest}.csv" if dest != "extras"
-                       else "factorial_extras.csv", rows)
+                dest_file = (f"factorial_d_{dest}.csv" if dest != "extras"
+                             else "factorial_extras.csv")
+                have = done.get(dest_file, set())
+                rows = [r for r in rows
+                        if (r["spectrum"], r["drift"], r["prior"],
+                            r["noise"], r["seed"], r["method"])
+                        not in have]
+                if rows:
+                    append(dest_file, rows)
             print(f"[{i}/{len(tasks)}] {futs[fut]} -> {dest} "
                   f"({time.perf_counter() - t0:.0f}s)", flush=True)
     print(f"done ({time.perf_counter() - t0:.0f}s)")

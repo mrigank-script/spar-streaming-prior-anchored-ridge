@@ -92,7 +92,7 @@ def main() -> None:
     df = pd.read_csv(out)
     main = df[df.drift.isin(["abrupt", "both", "covrot"])
               & (df.noise == "gauss")]
-    for m, g in df.groupby("method"):
+    for m, g in main.groupby("method"):
         x = g.mse_overall.to_numpy()
         print(f"{m:14s} all n={len(x)} mean={x.mean():.4f} "
               f"worst={x.max():.4f}")
