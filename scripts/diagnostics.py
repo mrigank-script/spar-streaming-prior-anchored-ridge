@@ -831,7 +831,7 @@ def main() -> None:
                                  "exactrisk", "all"])
     args = parser.parse_args()
     which = (["vff", "windup", "sgd", "coupling", "rmt", "alt_trust",
-              "subopt"]
+              "subopt", "exactrisk"]
              if args.diag == "all" else [args.diag])
     fns = {"vff": diag_vff, "windup": diag_windup, "sgd": diag_sgd,
            "coupling": diag_coupling, "rmt": diag_rmt,

@@ -124,8 +124,11 @@ py scripts/run_all.py                  # the full grid (hours; resumable)
 
 Stages: `verify` (exactness checks + sympy identities; exits nonzero on any
 failed identity), `factorial` (the grid), `sparkf`/`append` (the appended grid
-arms), `aggregate`, `ablation`, `falseesc`, `regret`, `ops` (per-step cost — run
-alone for clean timing), `eeg`, `bp` (GPU only, §6), `figures`.
+arms), `aggregate`, `ablation`, `falseesc`, `regret`, `extra` (legacy-strength
+ablation, dead-direction / finite-D diagnostics, moving-target decomposition,
+sustained-drift sticky floor, transient sweep, real electricity stream, extra
+stream sweeps), `ops` (per-step cost — run alone for clean timing), `eeg`,
+`bp` (GPU only, §6), `figures` (F1–F2 schematics + F3–F7 data figures).
 
 The revision grid (prediction-unit SPAR, expanded baseline sweeps) and its
 ablations:

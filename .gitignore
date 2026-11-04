@@ -49,3 +49,6 @@ Thumbs.db
 results/factorial_mismatch_legacy.csv
 results/redteam/
 paper/build/*.png
+
+# Local audit batches (script copies for review)
+_audit/

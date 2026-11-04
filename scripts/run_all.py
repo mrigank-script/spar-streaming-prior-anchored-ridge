@@ -17,6 +17,11 @@ Steps:
   ablation    SPAR-Pull component ablation
   falseesc    Proposition 3 false-escalation calibration
   regret      Proposition 4 regret scaling (horizon sweep + dimension sweep)
+  extra       cited results outside the factorial grid: legacy-strength
+              ablation, dead-direction and finite-D concentration diagnostics,
+              moving-target decomposition, sustained-drift sticky floor,
+              transient strength sweep, real electricity stream, extra stream
+              sweeps
   ops         per-step cost table (run ALONE for clean timing)
   eeg         BCI IV 2a + 2b Tier-1 benchmark (Windows, cached data)
   bp          BP arms (requires WSL GPU: run run_bp_tta_2a.sh / _2b.sh)
@@ -34,7 +39,20 @@ ROOT = Path(__file__).resolve().parents[1]
 os.environ.setdefault("OMP_NUM_THREADS", "4")
 
 STEPS = ["verify", "factorial", "sparkf", "append", "aggregate", "ablation",
-         "falseesc", "regret", "ops", "eeg", "bp", "figures"]
+         "falseesc", "regret", "extra", "ops", "eeg", "bp", "figures"]
+
+EXTRA_SCRIPTS = [
+    ("ablation_spar_kf.py", []),
+    ("dead_direction.py", []),
+    ("finite_d_conc.py", []),
+    ("moving_targets.py", []),
+    ("sustained_drift.py", []),
+    ("transient_test.py", []),
+    ("bench_stream_real.py", ["--clients", "11,82,171", "--fresh"]),
+    ("bench_stream_extra.py", []),
+    ("bench_stream_extra.py", ["--horizon"]),
+    ("bench_stream_extra.py", ["--egp"]),
+]
 QUICK_STEPS = ["verify", "aggregate", "figures"]
 
 APPEND_SCRIPTS = [
@@ -110,6 +128,9 @@ def main() -> None:
         elif name == "regret":
             run([py, "scripts/regret_scaling.py"], "regret-scaling")
             run([py, "scripts/regret_dscaling.py"], "regret-dimension-sweep")
+        elif name == "extra":
+            for script, extra in EXTRA_SCRIPTS:
+                run([py, f"scripts/{script}", *extra], f"extra:{script}")
         elif name == "ops":
             run([py, "scripts/bench_ops.py"], "ops-table")
         elif name == "eeg":
@@ -130,6 +151,8 @@ def main() -> None:
             print("  wsl -e bash scripts/run_bp_tta_2b.sh")
         elif name == "figures":
             run([py, "scripts/make_figures.py"], "figures")
+            run([py, "scripts/make_schematic.py"], "figures:schematic")
+            run([py, "scripts/make_geometry.py"], "figures:geometry")
         else:
             print(f"unknown step: {name}")
 

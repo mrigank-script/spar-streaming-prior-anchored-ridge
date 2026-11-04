@@ -516,7 +516,7 @@ Every result table in the paper is machine-printed from a committed CSV under \t
 
 
 \emph{One driver.}
-A single driver regenerates every figure and every wired result table from the committed caches:
+A single driver regenerates every figure and every result table from the committed caches:
 \begin{quote}
 \ttfamily
 py scripts/run\_all.py --list\ \ list the pipeline steps\\
@@ -542,10 +542,11 @@ stage & driver & output \\
 \texttt{ablation} & \texttt{revision\_runs.py --suite ablation} & \texttt{ablation\_spar\_pull.csv} \\
 \texttt{falseesc} & 300-stream calibration & \texttt{false\_esc.csv} \\
 \texttt{regret} & horizon and dimension scaling & \texttt{regret\_*.csv} \\
+\texttt{extra} & \texttt{ablation\_spar\_kf.py}, \texttt{dead\_direction.py}, \texttt{finite\_d\_conc.py}, \texttt{moving\_targets.py}, \texttt{sustained\_drift.py}, \texttt{transient\_test.py}, \texttt{bench\_stream\_real.py}, \texttt{bench\_stream\_extra.py} & \texttt{ablation\_spar\_kf.csv}, \texttt{dead\_direction.csv}, \texttt{finite\_d\_conc.csv}, \texttt{moving\_targets.csv}, \texttt{sustained\_drift.csv}, \texttt{transient\_test.csv}, \texttt{stream\_*.csv} \\
 \texttt{ops} & wall-clock timing at $D=2048$ & \texttt{ops\_table.csv} \\
 \texttt{eeg} & \texttt{bench\_eeg\_tier1.py} & \texttt{eeg\_tier1\_2*.csv} \\
 \texttt{bp} & backprop baselines & \texttt{bp\_tta\_2*.csv} \\
-\texttt{figures} & \texttt{make\_figures.py} & \texttt{results/figures/} \\
+\texttt{figures} & \texttt{make\_figures.py}, \texttt{make\_schematic.py}, \texttt{make\_geometry.py} & \texttt{results/figures/} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -561,7 +562,7 @@ The loader prefers the npz cache: run \texttt{scripts/export\_eeg\_npz.py} once 
 
 \emph{Electricity data.}
 The real stream of Appendix~\ref{app:realstream} reads the public hourly electricity-load panel (321 clients, $26{,}304$ rows, headerless comma-separated) from \texttt{data/ts/electricity.csv} (the loader also accepts the \texttt{.txt} variant); the file is a public download and is not shipped with the artifact.
-It regenerates with \texttt{scripts/bench\_stream\_real.py --clients 11,82,171} (\texttt{results/stream\_electricity.csv}); the script accepts any client indices, and the tables report the 25th-, 50th-, and 75th-percentile clients.
+It regenerates with \texttt{scripts/bench\_stream\_real.py --clients 11,82,171 --fresh} (\texttt{results/stream\_electricity.csv}); the script accepts any client indices, and the tables report the 25th-, 50th-, and 75th-percentile clients.
 The transient strength sweep of Appendix~\ref{app:transient} regenerates with \texttt{scripts/transient\_test.py} (\texttt{results/transient\_test.csv}).
 The grid-default BCI row of Table~\ref{tab:eeg} is the \texttt{hybrid-spar\_kf\_grid} column of \texttt{scripts/bench\_eeg\_tier1.py}; on 2a it is also reproduced by the cheaper \texttt{scripts/eeg\_grid\_default\_probe.py}, which saves \texttt{results/eeg\_griddefault\_2a.csv}.
 

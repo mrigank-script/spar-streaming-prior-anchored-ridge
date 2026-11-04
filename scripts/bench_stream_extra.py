@@ -6,7 +6,8 @@ to the three reported percentiles, and (b) an h-step-ahead target for
 h in {1, 6, 12, 24}, which probes the lag/variance tradeoff across horizons.
 The arms and grid-default control parameters are unchanged.
 
-Writes results/stream_random_clients.csv and results/stream_horizon.csv.
+Writes results/stream_random_clients.csv, results/stream_horizon.csv, and
+results/stream_random_egp.csv (the two sampled clients reported in the text).
 """
 
 import os
@@ -29,6 +30,8 @@ from rls_baselines import (run_kf_est, run_leaky_batch, run_spar_eg,  # noqa: E4
 
 N_RANDOM = 6
 HORIZONS = (1, 12)
+# The two sampled clients whose SPAR-EG+ comparison the main text reports.
+EGP_CLIENTS = (13, 201)
 
 
 def build_h(vals, client, h):
@@ -68,9 +71,11 @@ def main() -> None:
                                                 replace=False))
     print(f"random clients: {clients}", flush=True)
 
-    rrows = []
+    do_horizon = "--horizon" in sys.argv
+    do_egp = "--egp" in sys.argv
     t_all = time.perf_counter()
-    if "--horizon" not in sys.argv:
+    if not do_horizon and not do_egp:
+        rrows = []
         for client in clients:
             x, y = build_h(vals, client, 1)
             task = arms(x, y)
@@ -93,7 +98,7 @@ def main() -> None:
         print(piv.mean().round(5).to_string())
         print(f"SPAR-Pull <= best baseline on {wins}/{len(piv)} clients")
 
-    if "--horizon" in sys.argv:
+    if do_horizon:
         hrows = []
         for h in HORIZONS:
             for client in picks:
@@ -111,8 +116,20 @@ def main() -> None:
         hp = pd.DataFrame(hrows).pivot_table(index="horizon", columns="method",
                                              values="mse")
         print(hp.round(5).to_string())
-    print("\nsaved results/stream_horizon.csv" if "--horizon" in sys.argv
-          else "\nsaved results/stream_random_clients.csv")
+    if do_egp:
+        erows = []
+        for client in EGP_CLIENTS:
+            x, y = build_h(vals, client, 1)
+            preds, _ = run_spar_kf(x, y, T_WARM, G_init=None, **GRID)
+            egp = run_spar_eg(x, y, T_WARM, G_init=None, extra_preds=preds)
+            best_leaky = min(
+                mse(run_leaky_batch(x, y, T_WARM, lam=lam), y)
+                for lam in (0.999, 0.99))
+            erows.append(dict(client=client, method="SPAR-EG+",
+                              mse=mse(egp, y), best_leaky=best_leaky))
+        pd.DataFrame(erows).to_csv(
+            ROOT / "results" / "stream_random_egp.csv", index=False)
+        print("\nsaved results/stream_random_egp.csv")
 
 
 if __name__ == "__main__":
