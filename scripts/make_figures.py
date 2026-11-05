@@ -43,15 +43,13 @@ def load_factorial():
 def persist_dial_trajectory():
     """Run the two-estimator demo stream once and persist the trajectories."""
     out = RES / "estimator_trajectory.csv"
-    if out.exists():
-        return out
     from rls_baselines import make_stream_fac, run_spar_kf
     x, y, w_true, t1, t2, Q0, lam0 = make_stream_fac(
         seed=0, D=128, T=12000, spectrum="decay3", drift="abrupt")
     Tw = 2000
     _, rhos, ws = run_spar_kf(x, y, Tw, refresh_every=10, resid_fast=30,
                               rho_drift_floor=0.02, prediction_units=True,
-                              return_diag=True)
+                              debias_variance_floor=True, return_diag=True)
     event = t1 - Tw
     rows = pd.DataFrame({
         "step": np.arange(len(ws)),
@@ -187,7 +185,7 @@ def fig_noise_floor(main):
             if arm:
                 sub = main[(main.method == arm) & (main.spectrum == s)].mse_pre
             else:
-                per = (main[main.method.str.startswith("kf") & (main.spectrum == s)]
+                per = (main[main.method.str.startswith("kf[") & (main.spectrum == s)]
                        .groupby("method").mse_pre.mean())
                 sub = main[(main.method == per.idxmin()) & (main.spectrum == s)].mse_pre
             mu.append(sub.mean())

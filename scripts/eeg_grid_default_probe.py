@@ -5,6 +5,9 @@ Runs only the hybrid feature pipeline and the one head, so it is far cheaper
 than the full tier-1 suite.
 """
 
+import os
+os.environ.setdefault("JAX_ENABLE_X64", "1")
+
 import argparse
 import sys
 import time

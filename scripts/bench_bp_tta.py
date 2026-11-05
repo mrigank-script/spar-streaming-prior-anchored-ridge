@@ -1,14 +1,13 @@
 """BP arms: train-split-tuned EEGNet-lite + WiSE-FT on the net (WSL GPU).
 
 Arms (per subject, BCI IV 2a/2b from the .npz cache):
-  bp-tuned      EEGNet-lite, (epochs, lr) selected on an 80/20 train split
-                (NO test access), retrained on the full train session.
-  wiseft-net    WiSE-FT protocol on the net: zero-shot = train-session net;
-                fine-tuned = net trained on train + full stream (offline,
-                supervised -- disclosed); alpha swept post-hoc, best alpha
-                reported (their envelope). Includes alpha=0 (zero-shot) and
-                alpha=1 (fine-tuned) endpoints.
-  bp-e2e        the tuned net evaluated e2e (= wiseft alpha=0 endpoint).
+  bp-e2e        EEGNet-lite with (epochs, lr) selected on an 80/20 train
+                split (no test access), retrained on the full train session.
+  wiseft-net    causal online WiSE-FT: zero-shot = the train-session net;
+                one Adam step per trial AFTER predicting it; alpha swept
+                post-hoc over (1-a) W_zero + a W_t. alpha=0 is the
+                zero-shot endpoint, alpha=1 the fully fine-tuned endpoint.
+All four scores are balanced accuracy over the test session.
 
 Run: $BP_PYTHON scripts/bench_bp_tta.py --dataset 2a
 (WSL GPU venv; BP_PYTHON defaults to python3)
@@ -30,7 +29,7 @@ import optax
 
 from bench_bp_core import (downsample, forward, init_params,  # noqa: E402
                            standardize_channels)
-from core.metrics import balanced_accuracy, cohen_kappa  # noqa: E402
+from core.metrics import balanced_accuracy  # noqa: E402
 
 CACHE = ROOT / "data" / "eeg_cache"
 
@@ -127,24 +126,30 @@ def main() -> None:
             updates, state = opt_ft.update(grads, state)
             return optax.apply_updates(p, updates), state
 
-        correct = {round(float(a), 2): 0 for a in alphas}
+        a_keys = [round(float(a), 2) for a in alphas]
         n_st = len(y_st)
+
+        @jax.jit
+        def predict_alphas(pz, pf, xb):
+            def one(a):
+                pa = jax.tree_util.tree_map(
+                    lambda z, f: (1.0 - a) * z + a * f, pz, pf)
+                return jnp.argmax(forward(pa, xb[None], K)[0][0])
+            return jax.vmap(one)(jnp.asarray(a_keys, dtype=jnp.float32))
+
+        preds_a = {a: np.zeros(n_st, dtype=int) for a in a_keys}
         for t in range(n_st):
             x_t = jnp.asarray(X_st[t])
-            for a in alphas:
-                p_a = jax.tree_util.tree_map(
-                    lambda z, f: (1 - a) * z + a * f, p_zero, p_ft)
-                logit_a, _ = forward(p_a, x_t[None], K)
-                if int(jnp.argmax(logit_a[0])) == int(y_st[t]):
-                    correct[round(float(a), 2)] += 1
+            pa = np.asarray(predict_alphas(p_zero, p_ft, x_t))
+            for j, a in enumerate(a_keys):
+                preds_a[a][t] = int(pa[j])
             p_ft, state_ft = sgd_step(p_ft, state_ft, x_t, int(y_st[t]))
 
-        accs = {a: c / n_st for a, c in correct.items()}
-        # balanced accuracy proxy via per-class rates (classes near-balanced)
+        accs = {a: balanced_accuracy(y_st, preds_a[a]) for a in a_keys}
         best_a = max(accs, key=accs.get)
         row["wiseft-best_a"] = best_a
         row["wiseft-best"] = accs[best_a]
-        row["wiseft-a0"] = row["bp-e2e"]
+        row["wiseft-a0"] = accs[0.0]
         row["wiseft-a1"] = accs[1.0]
 
         rows.append(row)
@@ -155,7 +160,7 @@ def main() -> None:
     print(f"\n== BP arms, BCI IV {args.dataset} ({len(rows)} subjects) ==")
     for key in ("bp-e2e", "wiseft-best", "wiseft-a0", "wiseft-a1"):
         vals = np.array([r[key] for r in rows])
-        print(f"{key:<14} balanced-acc {vals.mean():.3f} ± {vals.std():.3f}")
+        print(f"{key:<14} balanced-acc {vals.mean():.3f} ± {vals.std(ddof=1):.3f}")
 
     import pandas as pd
     pd.DataFrame(rows).to_csv(

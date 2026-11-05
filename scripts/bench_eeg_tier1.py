@@ -101,7 +101,7 @@ def stream_spar_kf_eeg(X_tr, y_tr, X_st, y_st, K, refresh_every=5,
             delta = G_ref - W_data
             C_ref = float(np.sum(delta * (Abar @ delta))) - V_hat
             E_resid = max(0.0, sigma2_fast - sigma2_base)
-            C_resid = E_resid
+            C_resid = E_resid * K
             C_floor = 0.5 * sigma2_base * d_act * K / n_eff
             if C_ema is None:
                 C_ema = 2.0 * C_floor
@@ -400,8 +400,8 @@ def main() -> None:
     for name in names:
         bal = np.array([r[name][0] for r in rows])
         kap = np.array([r[name][1] for r in rows])
-        print(f"{name:<20} balanced-acc {bal.mean():.3f} ± {bal.std():.3f}"
-              f" | kappa {kap.mean():.3f} ± {kap.std():.3f}")
+        print(f"{name:<20} balanced-acc {bal.mean():.3f} ± {bal.std(ddof=1):.3f}"
+              f" | kappa {kap.mean():.3f} ± {kap.std(ddof=1):.3f}")
 
     import pandas as pd
     frame = pd.DataFrame([
@@ -433,10 +433,14 @@ def main() -> None:
         x = np.array([r[oname][0] for r in rows])
         yc = np.array([r[best_classical][0] for r in rows])
         t_stat, p_val = stats.ttest_rel(x, yc)
-        d = (x - yc).mean() / (x - yc).std() + 1e-12
+        d = (x - yc).mean() / ((x - yc).std(ddof=1) + 1e-12)
         pvals.append(p_val)
         pairs.append((oname, x.mean() - yc.mean(), t_stat, d))
-    adj = holm(np.array(pvals))
+    pv = np.array(pvals)
+    adj = np.full(len(pv), np.nan)
+    finite = np.isfinite(pv)
+    if finite.any():
+        adj[finite] = holm(pv[finite])
     print("Holm-adjusted paired tests (ours vs best classical):")
     for (oname, diff, t_stat, d), p_adj in zip(pairs, adj):
         print(f"  {oname:<20} diff={diff:+.4f} t={t_stat:.2f}"

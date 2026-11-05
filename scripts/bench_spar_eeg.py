@@ -60,7 +60,6 @@ def stream_spar(X_tr, y_tr, X_st, y_st, K, rho_init=0.1, gamma=1.0, alpha=1.0,
     sigma2 = float(np.mean(resid_w ** 2)) + 1e-12
     sigma2_fast = sigma2_slow = sigma2
     Abar_warm = A / n
-    tr_inv_warm = float(np.trace(np.linalg.inv(Abar_warm + 1e-8 * np.eye(D))))
     C_floor = 0.5 * sigma2 * D * K / n
     C_ema = 2 * C_floor
     rho = rho_init
@@ -88,7 +87,7 @@ def stream_spar(X_tr, y_tr, X_st, y_st, K, rho_init=0.1, gamma=1.0, alpha=1.0,
             delta = G_ref - W_data
             C_ref = float(np.sum(delta * (Abar @ delta))) - V_hat
             E_resid = max(0.0, sigma2_fast - sigma2_slow)
-            C_resid = E_resid
+            C_resid = E_resid * K
             C_floor_use = 0.5 * sigma2_slow * d_act * K / n
             C_raw = max(C_ref, C_resid, C_floor_use, 1e-10)
             C_ema = (1 - eta_C) * C_ema + eta_C * C_raw
@@ -269,8 +268,8 @@ def main() -> None:
     for name in names:
         bal = np.array([r[name][0] for r in rows])
         kap = np.array([r[name][1] for r in rows])
-        print(f"{name:<16} balanced-acc {bal.mean():.3f} ± {bal.std():.3f}"
-              f" | kappa {kap.mean():.3f} ± {kap.std():.3f}")
+        print(f"{name:<16} balanced-acc {bal.mean():.3f} ± {bal.std(ddof=1):.3f}"
+              f" | kappa {kap.mean():.3f} ± {kap.std(ddof=1):.3f}")
 
     import pandas as pd
     frame = pd.DataFrame([
@@ -284,6 +283,8 @@ def main() -> None:
     print("\n== paired tests (balanced accuracy) ==")
     for a in ("spar_full_a0.995", "spar_adp", "pam_g0.1"):
         for b in ("pam_g0.1", "leaky_a0.99", "warm"):
+            if a == b:
+                continue
             x = frame[f"{a}_bal"].to_numpy()
             y = frame[f"{b}_bal"].to_numpy()
             t_stat, p_val = stats.ttest_rel(x, y)
