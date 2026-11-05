@@ -3,8 +3,8 @@ Cover Letter - Journal of Machine Learning Research (JMLR) submission
 Title: Finite-Cadence Refresh Equilibria for Streaming Prior-Anchored Ridge: A
 Closed-Form Forgetting Window and Spectral Correction
 
-Author (sole): Mrigank Shekhar Singh, DLDAV Model School, Shalimar Bagh, Delhi,
-India.  Corresponding author: Mrigank Shekhar Singh, mrigank.codes@gmail.com
+Author (sole): Mrigank Shekhar Singh, DLDAV Model School, Shalimar Bagh, Delhi
+110088, India.  Corresponding author: Mrigank Shekhar Singh, mrigank.codes@gmail.com
 
 Keywords: streaming regression, prior-anchored ridge, forgetting factor, drift
 adaptation, deterministic equivalent
@@ -49,24 +49,26 @@ Suggested Action Editors (all JMLR Action Editors; non-binding, in order):
   3. Wouter Koolen (online learning, regret bounds, sequential calibration)
   4. Lorenzo Rosasco (statistical learning theory, spectral regularization,
      ridge/kernel methods)
-  5. Pierre Alquier (statistical learning theory, high-dimensional statistics),
-     or Mladen Kolar (high-dimensional statistics)
+  5. Pierre Alquier (statistical learning theory, high-dimensional statistics)
 
 Suggested reviewers (all JMLR Editorial Board of Reviewers; non-binding):
   1. Zhou Fan (random matrices, high-dimensional asymptotics)
   2. Edgar Dobriban (statistical learning theory, sketching, ridge asymptotics)
   3. Tengyuan Liang (high-dimensional asymptotics, interpolation)
   4. Michal Derezinski (randomized linear algebra, matrix sketching)
-  5. Dylan Foster (online learning, control), or Lijun Zhang (online learning,
-     dynamic regret under drift)
+  5. Lijun Zhang (online learning, dynamic regret under drift)
 
 The suggested names are offered by topic only; please disregard any for which a
 conflict of interest arises.
 
-Length. The manuscript is 50 pages including appendices. The extended
-experimental protocol, BCI IV details, the hyperparameter table, and the
-reproducibility material are provided as a separate online appendix (19 pages),
-following JMLR's convention for online appendices.
+Length and justification. The manuscript is 50 pages in total, including
+appendices: a concise 17-page main text (Sections 1-7), self-contained
+step-by-step proofs and supporting theory (Appendices A-B, 24 pages), the Lean 4
+declaration map (Appendix C, 4 pages), and the reference list (5 pages). Keeping
+the full proofs in the main PDF lets reviewers verify every analytical step
+directly, while the extended experimental protocol, BCI IV details, hyperparameter
+provenance, and reproducibility scripts are provided in a separate 19-page Online
+Appendix following JMLR's convention.
 
 Sincerely,
 Mrigank Shekhar Singh
