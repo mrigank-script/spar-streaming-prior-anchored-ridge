@@ -34,8 +34,7 @@ LEAN_FILES = ["lakefile.toml", "lean-toolchain", "lake-manifest.json",
               "SparTheorems.lean", "build_ogd.sh", "build_err.sh",
               "print_axioms.sh", "axioms.log"]
 JMLR_PAPER_FILES = ["main.tex", "appendix.tex", "appendix_online.tex",
-                    "references.bib", "jmlr2e.sty", "build.cmd", "build.sh",
-                    "cover_letter.txt", "cover_letter.tex"]
+                    "references.bib", "jmlr2e.sty", "build.cmd", "build.sh"]
 
 # Legacy/one-off files that reach no pipeline stage, README, paper citation, or
 # import, plus binary intermediates and logs.
