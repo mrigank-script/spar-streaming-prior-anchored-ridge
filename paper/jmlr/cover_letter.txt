@@ -29,7 +29,7 @@ measured conflict and drift energy rather than from a tuned heuristic.
 Relation to prior work / originality.
 The manuscript is not under consideration at any other journal or conference and
 has not been published in any journal. A preprint of this work is available on
-Zenodo (DOI: 10.5281/zenodo.23856541). The submission is self-contained; there
+Zenodo (DOI: 10.5281/zenodo.23768172). The submission is self-contained; there
 is no prior conference version whose delta must be described.
 
 Authorship.
