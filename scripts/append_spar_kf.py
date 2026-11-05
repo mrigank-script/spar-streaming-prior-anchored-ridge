@@ -1,5 +1,5 @@
 """Append the legacy `spar_kf` arm to the completed factorial grid (same streams,
-same seeds — deterministic generator guarantees identical data)."""
+same seeds; the deterministic generator guarantees identical data)."""
 
 import os
 os.environ.setdefault("JAX_ENABLE_X64", "1")

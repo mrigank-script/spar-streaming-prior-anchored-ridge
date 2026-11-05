@@ -1,4 +1,4 @@
-"""Mismatched-generator configs — testing the estimators outside the theory's
+"""Mismatched-generator configs for testing the estimators outside the theory's
 model class.
 
 Three mismatches:

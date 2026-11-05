@@ -35,8 +35,8 @@ def run_ogd_spar(x, y, T_warm, alpha=0.997, rho_ref=0.1, eps0=0.01,
                   refresh_every=50, eta0=0.05, s_init=0.5, G_init=None):
     """OGD on the pull s over the segment family, with SPAR-refreshed anchor.
 
-    Component streams (both endogenous to the algorithm's own history —
-    the Zinkevich bound tolerates this):
+    Component streams (both endogenous to the algorithm's own history,
+    which the Zinkevich bound tolerates):
       w_hat_t : eps0-ridge data solve from the forgetting accumulator
       G_t     : SPAR-refreshed anchor (pull-identity rates at rho_ref)
     The learner plays s_t, predicts with (1-s)w_hat + s G, then updates

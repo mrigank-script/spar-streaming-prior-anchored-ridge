@@ -55,7 +55,7 @@ def run_spar_kf_damped(x, y, T_warm, G_init=None, refresh_every=10, resid_fast=3
         if (t - T_warm) % refresh_every == 0:
             Abar = A / n_eff
             mu_bar = float(np.trace(Abar) / D) + 1e-12
-            # DAMPED trace: use (Abar + rho*I)^-1 instead of Abar^-1
+            # ridge-damped variance: trace(Abar (Abar + rho I)^-2)
             rho_prev = max(rho, 1e-6)
             Minv = np.linalg.inv(Abar + rho_prev * np.eye(D))
             tr_inv_damped = float(np.trace(Minv))

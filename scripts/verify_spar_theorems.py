@@ -32,7 +32,7 @@ rhsg = (1 - rho / (mu + rho)) * (b / mu - w) + (rho / (mu + rho)) * (gam * g - w
 resg = sp.simplify(sp.together(lhsg - rhsg))
 checks.append(("pull identity (general gamma)", resg))
 
-# Convex interpolation identity — the excess equals s*(1-s)*(u-d)^2
+# Convex interpolation identity: the excess equals s*(1-s)*(u-d)^2
 lhs_a = (1 - s) * u**2 + s * d**2 - ((1 - s) * u + s * d) ** 2
 res_a = sp.factor(sp.expand(lhs_a - s * (1 - s) * (u - d) ** 2))
 checks.append(("interpolation excess = s*(1-s)*(u-d)^2", res_a))
@@ -65,7 +65,7 @@ dval = sp.simplify(sp.diff(val, C))
 checks.append(("minimax value derivative (expect D^2 v^2/(Dv+C)^2)",
                sp.simplify(dval - (D * v) ** 2 / (D * v + C) ** 2)))
 
-# Lag invariance — (1-s)(-L) + s*x = x  =>  x = -L  (s != 1)
+# Lag invariance: (1-s)(-L) + s*x = x  =>  x = -L  (s != 1)
 sol_lag = sp.solve(sp.Eq((1 - s) * (-L) + s * x, x), x)
 res_lag = sp.simplify(sp.together(sol_lag[0] - (-L)))
 checks.append(("lag invariance x = -L", res_lag))
@@ -106,7 +106,7 @@ rhs_form = (1 - a_sym**t_val * (1 + t_val * (1 - a_sym))) / (1 - a_sym)**2
 checks.append((f"W3 finite-t truncated-age sum (t={t_val})",
                sp.simplify(sp.expand(lhs_sum - rhs_form))))
 
-# Safety threshold polynomial — R(s) - v = s(s(v+c) - 2v)
+# Safety threshold polynomial: R(s) - v = s(s(v+c) - 2v)
 R_th = (1 - s) ** 2 * v + s**2 * c
 checks.append(("safety threshold R(s)-v = s(s(v+c)-2v)",
                sp.simplify(sp.expand(R_th - v - s * (s * (v + c) - 2 * v)))))

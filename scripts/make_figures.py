@@ -277,7 +277,7 @@ def fig_regret():
     # Mechanical amortization limit of a fixed-length drift phase
     ax.loglog(tt, y0 * (T0 / tt), "k:", lw=1.0)
 
-    # Callout labels clearly placed without intersecting any lines
+    # Callout labels placed without intersecting any lines
     _lbl(ax, 28000, 0.012, "$T^{-1/2}$ per-step bound", "#555555", fs=6.5)
     _lbl(ax, 20000, 3.0e-4, "$T^{-1}$ amortization", "#222222", fs=6.5)
 

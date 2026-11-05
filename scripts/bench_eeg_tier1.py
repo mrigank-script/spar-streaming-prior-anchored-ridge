@@ -1,4 +1,4 @@
-"""Tier-1 EEG benchmark — classical baselines + the self-calibrating SPAR-Pull head.
+"""Tier-1 EEG benchmark: classical baselines and the self-calibrating SPAR-Pull head.
 
 Arms (BCI IV 2a + 2b, cached epochs, cross-session protocol):
   Classical baselines (published, canonical implementations):

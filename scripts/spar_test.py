@@ -1,4 +1,4 @@
-"""SPAR: Spectrally-Adaptive Anchor Refresh — pull-identity refresh,
+"""SPAR (Spectrally-Adaptive Anchor Refresh): pull-identity refresh,
 adaptive strength via reference-conflict + residual CUSUM, accumulator forgetting.
 
 Theory encoded (see paper/appendix.tex):
@@ -352,7 +352,7 @@ def main() -> None:
         # divergence count (robustness check)
         div = [n for n in fam_leaky if agg(n, "post") > 100]
         print(f"  leaky arms diverged (post MSE > 100): {len(div)}/{len(fam_leaky)}"
-              f" — anchored arms: provably immune (kappa <= 1 + mu_max/rho)")
+              f"; anchored arms: provably immune (kappa <= 1 + mu_max/rho)")
 
     x, y, w_true, t1, t2, _, _ = make_stream(seed=0, D=D, noise=noise, spectrum_decay=3.0)
     resid = check_pull_identity(x, y, w_true, T_warm, rho=0.1, gamma=1.0, at_step=5000)
