@@ -457,7 +457,7 @@ The bound uses only the sub-exponential martingale-difference structure of $z_t$
 \operatorname{Var}(Z_t) \;\le\; \frac{\sigma_z^2}{m_{\mathrm{eff}}}\Bigl(1 + 2\sum_{k\ge1}|\rho_k|(1-\eta_f)^k\Bigr) \;\le\; \frac{\sigma_z^2}{m_{\mathrm{eff}}}\,(1 + 2S),
 \qquad S := \sum_{k\ge1}|\rho_k|,
 \]
-so the Freedman bound and the time-uniform guarantee of Proposition~\ref{prop:falsealarm} hold verbatim with $\nu_z^2$ replaced by $\nu_z^2(1+2S)$: this covers geometrically mixing streams ($\sum|\rho_k|<\infty$), and, because $|\rho_k|\le\varphi_k^{1/2}$, stationary $\varphi$-mixing streams with summable coefficients. Under heavy tails with $\E|z|^{2+p}<\infty$ ($p>0$) the Gaussian tail is replaced by a Fuk--Nagaev bound, the threshold scales as $(T/\delta)^{1/(2+p)}$ in place of $\sqrt{\log(T/\delta)}$, and the false-alarm rate remains at most $\delta$ at that larger threshold.
+so the Freedman bound and the time-uniform guarantee of Proposition~\ref{prop:falsealarm} hold verbatim with $\nu_z^2$ replaced by $\nu_z^2(1+2S)$: this covers geometrically mixing streams ($\sum|\rho_k|<\infty$), and, because $|\rho_k|\le\varphi_k^{1/2}$, stationary $\varphi$-mixing streams with summable coefficients. Under heavy tails with $\E|z|^{2+p}<\infty$ ($p>0$) the Gaussian tail is replaced by a Fuk--Nagaev bound \citep{fuk1971}, the threshold scales as $(T/\delta)^{1/(2+p)}$ in place of $\sqrt{\log(T/\delta)}$, and the false-alarm rate remains at most $\delta$ at that larger threshold.
 \end{remark}
 
 \subsection{Proof of Proposition~\ref{prop:ocowrap}(i) (projected gradient)}
@@ -554,7 +554,7 @@ Taking logarithms,
   (1 - \eta M)\sum_{t < T} m_t \;\le\; L_{j,T} + \frac{\ln K}{\eta},
 \]
 which is the stated bound since $1 - \eta M > 0$ (\texttt{hedge\_regret}).
-The mixture-convexity step $(\sum_i \pi_i u_i)^2 \le \sum_i \pi_i u_i^2$ is the interpolation bound of Proposition~\ref{prop:conflict}(i), formalized as \texttt{convex\_interp\_sq\_le}, so the realized mixture loss is bounded per step; the anytime form (the implemented schedule $\varsigma_t = \sqrt{\ln K / S_t}$) is the standard AdaHedge substitution \citep{cesabianchi2006}.
+The mixture-convexity step $(\sum_i \pi_i u_i)^2 \le \sum_i \pi_i u_i^2$ is the interpolation bound of Proposition~\ref{prop:conflict}(i), formalized as \texttt{convex\_interp\_sq\_le}, so the realized mixture loss is bounded per step; the anytime form (the implemented schedule $\varsigma_t = \sqrt{\ln K / S_t}$) is the standard AdaHedge substitution \citep{rooij2014}, a self-confident cumulative-loss schedule in the line of \citet{auer2002}; see also \citet{cesabianchi2006}.
 \end{proof}
 
 \medskip
@@ -908,7 +908,7 @@ The small-gain condition controls the coupling directly: when the two copies' es
 \end{proposition}
 \begin{proof}
 (i) The co-moving frame removes the linear growth: $A_t$ is tight by the Foster--Lyapunov drift $\E[A_{t+1}\mid\mathcal F_t]\preceq(1-\omega_{\min})A_t+\bar\Sigma$, the centered statistics $\tilde B_t,\tilde G_t$ are bounded through the pull interpolation, and the estimators live in a compact box by construction.
-The one-step kernel is $k$-periodic because the anchor refresh and estimator updates occur every $k$ steps, so Krylov--Bogoliubov is applied to the time-homogeneous $k$-step skeleton $\Phi_m$.
+The one-step kernel is $k$-periodic because the anchor refresh and estimator updates occur every $k$ steps, so the Krylov--Bogoliubov argument \citep{meyn2009} is applied to the time-homogeneous $k$-step skeleton $\Phi_m$.
 The hard gate $\mathbf 1\{E_t>0\}$ does not break the Feller property: when $\varepsilon_t$ has a continuous density (Gaussian or bounded with a density), the boundary event $\{E_t=0\}$ has conditional probability zero, so the transition expectation of any bounded continuous function is continuous in the state; no artificial smoothing of the gate is needed.
 Tightness plus this Feller property yields an invariant probability measure \citep{meyn2009}.
 (ii) Linearizing the joint error dynamics around the invariant set gives the feedback system state $\to$ estimator $\to$ state. The small-gain condition makes its spectral radius strictly below one in a weighted norm, and combined with the Foster--Lyapunov drift and the support condition this gives geometric ergodicity and uniqueness \citep[Ch.~18]{meyn2009}.
@@ -1038,7 +1038,7 @@ Proposition~\ref{prop:app-emh} and its corollaries are the stability statement b
 \label{app:lean}
 
 
-The algebraic core and the no-regret chain of Propositions~\ref{prop:conflict}--\ref{prop:ocowrap} are formalized in Lean 4 with Mathlib (\texttt{theory/lean/SparTheorems/} in the artifact).
+The algebraic core and the no-regret chain of Propositions~\ref{prop:conflict}--\ref{prop:ocowrap} are formalized in Lean 4 \citep{demoura2021} with the Mathlib library \citep{mathlib2020} (\texttt{theory/lean/SparTheorems/} in the artifact).
 This section maps the paper's results to the artifact, states the formalization boundary, records the axiom dependencies, and gives the build recipe.
 
 \subsection{Result-to-declaration Map}

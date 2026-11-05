@@ -74,7 +74,7 @@ The separable-covariance deterministic equivalent gives the retention $q$, the r
 The formula matches Monte Carlo within $4.0\%$ across the $45$-point grid (including the rank-deficient spectrum), within $13\%$ at the method's own operating points, and within $10.0\%$ for the conflict increment; rank-deficient populations reduce exactly to their active subspace (Corollary~\ref{cor:rmt-active}).
 
 \item \emph{A formalized core.}
-The algebraic core, the finite-cadence refresh chain, the OGD and Hedge regret bounds, and the coupled contraction are formalized in Lean 4: 85 declarations, no \texttt{sorry}, and only the three standard axioms (Appendix~\ref{app:lean}).
+The algebraic core, the finite-cadence refresh chain, the OGD and Hedge regret bounds, and the coupled contraction are formalized in Lean 4 \citep{demoura2021,mathlib2020}: 85 declarations, no \texttt{sorry}, and only the three standard axioms (Appendix~\ref{app:lean}).
 
 \item \emph{A calibrated streaming method.}
 The forgetting window and the anchor strength are estimated online from residual and anchor-disagreement statistics; prior immunity is carried by the direction-selective refresh $\beta_i = 1 - s_i$ (one $\rho$ sets it), and the strength rule enters as an onset guard when the warm-up prior scale is unknown, not as a continuous tracking rule.
@@ -114,7 +114,7 @@ Composite drift-triggered adaptations are surveyed in \citet{gama2014drift}.
 \emph{Regret and two-time-scale analysis.}
 The residual-driven estimators are coupled stochastic approximation: the accumulator tracks a moving target while its step size is estimated from the same residuals, for which two-time-scale conditions and drift tracking are classical \citep{benveniste1990,kushner2003,borkar2008}.
 The contribution here is the closed-form target and the verified contraction.
-Projected gradient and Hedge arguments are standard \citep{zinkevich2003}; the composition and its basis dependence are made explicit in Proposition~\ref{prop:ocowrap}.
+Projected gradient, Hedge, and exponentiated-gradient arguments are standard \citep{zinkevich2003,freund1997,kivinen1997}; the composition and its basis dependence are made explicit in Proposition~\ref{prop:ocowrap}.
 
 \emph{Random-matrix limits.}
 The finite-\(D\) correction uses the separable-covariance deterministic equivalent \citep{silverstein1995,rubio2011,hachem2007}.
@@ -479,7 +479,7 @@ method & mean MSE & geo.\ mean & worst MSE \\
 leaky RLS ($\lambda = 0.997$) & $0.555$ & $0.233$ & $2.12$ \\
 leaky RLS, information form ($\lambda = 0.99$) & $0.342$ & $0.188$ & $1.19$ \\
 SGD ($\mathrm{lr} = 0.01$) & $0.377$ & $0.147$ & $1.29$ \\
-Adam ($\mathrm{lr} = 0.01$) & $0.503$ & $0.291$ & $1.92$ \\
+Adam \citep{kingma2015adam} ($\mathrm{lr} = 0.01$) & $0.503$ & $0.291$ & $1.92$ \\
 directional forgetting & $1.81$ & $0.567$ & $7.54$ \\
 AROW & $2.74$ & $0.448$ & $10.55$ \\
 Kalman, $R$ estimated online (100-step horizon) & $1.09$ & $0.265$ & $5.36$ \\
@@ -535,10 +535,10 @@ Across the three clients SPAR-EG$^+$ stays within $1.2\%$ of the best oracle-tun
 
 \subsection{BCI IV Cross-session Evaluation}
 \label{sec:eeg}
-Nine subjects each from BCI IV 2a \citep{brunner2008bci2a,tangermann2012bci} and 2b \citep{leeb2008bci2b}, streamed from the training session against Riemannian baselines, backprop references, and our heads (Online Appendix~\ref{app:eeg}).
+Nine subjects each from BCI IV 2a \citep{brunner2008bci2a,tangermann2012bci} and 2b \citep{leeb2008bci2b}, streamed from the training session against Riemannian baselines \citep{barachant2012mdm,barachant2010riemannian}, backprop references \citep{lawhern2018eegnet}, and our heads (Online Appendix~\ref{app:eeg}).
 The head uses a reduced window range for the short evaluation streams; every other constant is the grid default.
 On 2b, the transductive SPAR-EG head reaches $0.816$ and SPAR-Pull $0.808$; the strictly causal SPAR-Pull head attains $0.800$, against $0.811$ for the causal WiSE-FT reference taken at the best of an $11$-value post-hoc $\alpha$-envelope (Online Appendix~\ref{app:eeg}). A causal end-to-end Hedge mixture on the causally aligned features lifts the causal head to $0.810$, narrowing the transductive-versus-causal gap from $0.015$ to $0.006$.
-On 2a, offline alignment leads the fixed readouts ($0.664$), with the post-hoc ensemble at $0.668$; the best streaming method is $0.627$. Both data sets have $T \approx 300$ trials, below the plug-in crossover horizon $T_{\mathrm{crit}} \asymp K^2/(s_0 - s^*)^2$ at which calibration overtakes fixed shrinkage (Appendix~\ref{app:proof-sign}), consistent with the fixed-anchor head leading on 2a and the mixture leading on 2b.
+On 2a, offline alignment \citep{he2020ea} leads the fixed readouts ($0.664$), with the post-hoc ensemble at $0.668$; the best streaming method is $0.627$. Both data sets have $T \approx 300$ trials, below the plug-in crossover horizon $T_{\mathrm{crit}} \asymp K^2/(s_0 - s^*)^2$ at which calibration overtakes fixed shrinkage (Appendix~\ref{app:proof-sign}), consistent with the fixed-anchor head leading on 2a and the mixture leading on 2b.
 
 \section{Scope and Boundary Conditions}
 \label{sec:limitations}

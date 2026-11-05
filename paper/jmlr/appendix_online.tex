@@ -68,7 +68,7 @@ SPAR-EG & $1.60$ & $7.77$ \\
 leaky RLS, information form ($\lambda = 0.99$) & $1.61$ & $7.70$ \\
 SPAR-Pull & $1.66$ & $8.10$ \\
 SGD ($\mathrm{lr} = 0.01$) & $2.07$ & $10.03$ \\
-Adam ($\mathrm{lr} = 0.01$) & $2.82$ & $13.32$ \\
+Adam \citep{kingma2015adam} ($\mathrm{lr} = 0.01$) & $2.82$ & $13.32$ \\
 WiSE-FT ($\alpha = 1$) & $3.62$ & $17.39$ \\
 anchor-free solve & $4.08$ & $19.70$ \\
 frozen warm solution & $5.91$ & $28.83$ \\
@@ -105,12 +105,12 @@ prior & oracle & $0.301$ & $0.294$ & $0.215$ & $0.267$ & $0.342$ \\
 \end{table}
 
 \emph{Methods.}
-Each configuration runs the baseline families below in a common streaming protocol, plus the slow-horizon estimated-$R$ Kalman, the variable forgetting factor baselines, the two OGD variants (scalar segment and $D$-dimensional profile), SPAR-EG$^+$, and the causally-tuned Kalman filters appended post hoc. The families are the frozen warm solution, an anchor-free solve, leaky RLS at $\lambda \in \{0.999, 0.997, 0.995, 0.99\}$ in both the covariance-form recursion and the batch information-form solve, directional forgetting at the matched grid $\lambda_f \in \{0.999, 0.997, 0.995, 0.99, 0.98, 0.95, 0.90\}$, AROW at $r \in \{0.01, 0.05, 0.1, 0.3, 0.5\}$, random-walk Kalman filters at $q \in \{10^{-6}, 10^{-5}, 10^{-4}\}$ with the true noise level plus the estimated-$R$ variants at both horizons, SGD at $\mathrm{lr} \in \{0.003, 0.01\}$ and Adam at $\mathrm{lr} \in \{0.0003, 0.001, 0.003, 0.01\}$, variable forgetting factor RLS at two floors under both the single-step and the nominal-length calibrations, and the WiSE-FT $\alpha$-envelope (11 values). The SPAR methods are scalar, diagonal, two-estimator, and expert-simplex.
+Each configuration runs the baseline families below in a common streaming protocol, plus the slow-horizon estimated-$R$ Kalman, the variable forgetting factor baselines, the two OGD variants (scalar segment and $D$-dimensional profile), SPAR-EG$^+$, and the causally-tuned Kalman filters appended post hoc. The families are the frozen warm solution, an anchor-free solve, leaky RLS at $\lambda \in \{0.999, 0.997, 0.995, 0.99\}$ in both the covariance-form recursion and the batch information-form solve, directional forgetting \citep{kulhavy1984,cao2000} at the matched grid $\lambda_f \in \{0.999, 0.997, 0.995, 0.99, 0.98, 0.95, 0.90\}$, AROW \citep{crammer2009arow} at $r \in \{0.01, 0.05, 0.1, 0.3, 0.5\}$, random-walk Kalman filters \citep{kalman1960,sayed1994} at $q \in \{10^{-6}, 10^{-5}, 10^{-4}\}$ with the true noise level plus the estimated-$R$ variants at both horizons, SGD at $\mathrm{lr} \in \{0.003, 0.01\}$ and Adam \citep{kingma2015adam} at $\mathrm{lr} \in \{0.0003, 0.001, 0.003, 0.01\}$, variable forgetting factor RLS at two floors under both the single-step and the nominal-length calibrations, and the WiSE-FT $\alpha$-envelope (11 values). The SPAR methods are scalar, diagonal, two-estimator, and expert-simplex.
 Sweeps are reported per value; the table reports each family's best setting under both the per-configuration rule (oracle-tuned baselines, the conservative treatment) and the global single-setting rule, and SPAR methods use the same configuration in every cell.
 
 \emph{Baseline verification.}
 Before any comparison, the \texttt{verify} step of the pipeline checks the implementation identities numerically: directional forgetting at $\lambda_f = 1$ coincides with RLS, the Kalman filter at $q = 0, R = 1$ coincides with RLS, and the WiSE-FT endpoints coincide with the frozen and fully adapted solves (maximum absolute deviation of order $10^{-15}$).
-The same step checks the algebraic identities of Section~\ref{sec:theory} symbolically (sympy), and the step exits nonzero on any failure.
+The same step checks the algebraic identities of Section~\ref{sec:theory} symbolically with SymPy \citep{meurer2017sympy}, and the step exits nonzero on any failure.
 
 \emph{Estimated-noise Kalman.}
 The grid includes two estimated-$R$ Kalman filters.
@@ -132,7 +132,7 @@ The batch information-form solve of the same objective is stable at every $\lamb
 \caption{Mean MSE over 27 configurations versus nominal window $1/(1-\lambda)$ (log--log; $+1$ s.d.\ whiskers). Leaky RLS degrades in one $\lambda$ step ($182 \to 1.2 \times 10^6$ at window $200 \to 100$); shading marks the windup regime ($\mathrm{window} < D = 128$); directional forgetting is divergence-free but $3.3\times$ worse at its best; SPAR-Pull and the scalar SPAR method use one fixed configuration everywhere.}
 \label{fig:cliffapp}
 \end{figure}
-A diagnostic log of the forgetting factor (\texttt{diagnostics.py} \texttt{--diag vff}, \texttt{results/vff\_diag.csv}) confirms the degeneracy: under the reference calibration $\xi = \sigma_0^2$ the factor remains pinned at its floor on $96\%$ of steps on both stationary and drifting streams (mean $\lambda = 0.990$ at floor $0.99$), and a recursive-scale variant of the rule (a Fortescue-style running $\xi$) still pins at the floor ($92\%$ of steps, overall MSE within $2\%$ of the best fixed-$\lambda$ method).
+A diagnostic log of the forgetting factor (\texttt{diagnostics.py} \texttt{--diag vff}, \texttt{results/vff\_diag.csv}) confirms the degeneracy: under the reference calibration $\xi = \sigma_0^2$ the factor remains pinned at its floor on $96\%$ of steps on both stationary and drifting streams (mean $\lambda = 0.990$ at floor $0.99$), and a recursive-scale variant of the rule (a Fortescue-style running $\xi$ \citep{fortescue1981}) still pins at the floor ($92\%$ of steps, overall MSE within $2\%$ of the best fixed-$\lambda$ method).
 Residual-driven forgetting degenerates to fixed-$\lambda$ leaky RLS whenever $\xi$ tracks the residual scale, a saturation documented in the variable-forgetting-factor literature \citep{paleologu2008}.
 The covariance-form VFF inherits the same calibration sensitivity: the single-step normalization $\xi = \sigma_0^2$ drives the factor below $D$ and it diverges identically, while the nominal-length normalization $\xi = N_0\sigma_0^2$ of the original formulation keeps the nominal window near $N_0$ and is stable (best single setting $N_0 = 100$: $0.267/0.98$; the single-step calibration diverges in all 135 runs), the horizon choice $N_0$ playing the role of the fixed window that SPAR's window estimator sets online.
 The first-order family terminates at its own boundary: at $\mathrm{lr} = 0.02$, one grid step above the swept maximum, SGD diverges on 45 of 135 runs, and at $\mathrm{lr} = 0.05$ the recursion overflows outright (\texttt{diagnostics.py} \texttt{--diag sgd}); the reported grid $\{0.003, 0.01\}$ sits at the stable frontier of the constant-step family.
@@ -275,7 +275,7 @@ SPAR-EG and SPAR-EG$^+$ run four batch solves per step (the frozen anchor is the
 \centering
 \includegraphics[width=2.9in]{F7_regret_scaling}
 \caption{Average per-step regret of the segment (scalar-pull) OGD method versus horizon $T$ (log--log; whiskers: $\pm 1$ s.d.\ over 5 seeds; the drift phase lasts a fixed $1{,}000$ steps at every horizon).
-Fitted slopes $-0.65$ (isotropic) and $-1.08$ (ill-conditioned, $\kappa = 10^3$) lie inside the $T^{-1/2}$ per-step rate (dashed) implied by the scalar $O(\sqrt T)$ Zinkevich bound (the $D = 1$ member of the Proposition~\ref{prop:ocowrap}(i) family, formalized as \texttt{ogd\_regret\_segment} in \texttt{Ogd.lean}), with the $T^{-1}$ amortization limit (dotted) as the mechanical floor.}
+Fitted slopes $-0.65$ (isotropic) and $-1.08$ (ill-conditioned, $\kappa = 10^3$) lie inside the $T^{-1/2}$ per-step rate (dashed) implied by the scalar $O(\sqrt T)$ Zinkevich bound \citep{zinkevich2003} (the $D = 1$ member of the Proposition~\ref{prop:ocowrap}(i) family, formalized as \texttt{ogd\_regret\_segment} in \texttt{Ogd.lean}), with the $T^{-1}$ amortization limit (dotted) as the mechanical floor.}
 \label{fig:regret}
 \end{figure}
 
@@ -430,10 +430,10 @@ The complete closed-form suite (feature extraction plus all closed-form methods)
 
 \emph{Feature families.}
 Three feature families feed the readouts of Table~\ref{tab:eeg}.
-CSP: 6-component CSP (Ledoit--Wolf shrinkage, log output) computed with MNE \citep{gramfort2013mne} on bandpassed epochs (8--30 Hz, 4th-order Butterworth), the classical motor-imagery standard \citep{ramoser2000csp}.
-Tangent covariance: per-trial log-Euclidean covariance tangent features (lower triangle) on bandpassed epochs, the feature family of pyriemann's tangent-space methods.
+CSP: 6-component CSP (Ledoit--Wolf shrinkage \citep{ledoitwolf2004}, log output) computed with MNE \citep{gramfort2013mne} on bandpassed epochs (8--30 Hz, 4th-order Butterworth), the classical motor-imagery standard \citep{ramoser2000csp}.
+Tangent covariance: per-trial log-Euclidean covariance tangent features \citep{arsigny2007} (lower triangle) on bandpassed epochs, the feature family of pyriemann's tangent-space methods \citep{barachant2012mdm,barachant2013}.
 Hybrid: the statistical pipeline (summary statistics, lags $(1, 2, 4, 8)$, FFT bins) concatenated with the tangent-covariance features.
-Classical readouts are MDM and FgMDM as implemented in pyriemann \citep{barachant2020pyriemann}, raw-feature LDA with and without session-level Euclidean alignment \citep{he2020ea}, CSP-LDA, tangent-covariance LDA (shrinkage LDA in all cases), and a covariance-LDA method with the same offline alignment.
+Classical readouts are MDM and FgMDM \citep{barachant2012mdm,barachant2010riemannian} as implemented in pyriemann \citep{barachant2020pyriemann}, raw-feature LDA with and without session-level Euclidean alignment \citep{he2020ea}, CSP-LDA, tangent-covariance LDA (shrinkage LDA in all cases), and a covariance-LDA method with the same offline alignment.
 Streaming readouts are the two-estimator SPAR-Pull head (anchor refresh every 5 trials), the AAL head (fixed $\gamma = 1$ anchoring), and a forgetting-only leaky head, each applied to CSP, tangent-covariance, or hybrid features.
 
 \emph{Alignment protocol.}
@@ -449,7 +449,7 @@ Measured directly, the offline fine-tuned endpoint reaches accuracy $1.000$ by m
 The comparison we report is therefore the causal reformulation: the network is fine-tuned online with one SGD step per trial \emph{after} predicting it, trial $t$ is predicted with the interpolation $(1 - \alpha)\,W_{\mathrm{zero}} + \alpha\,W_t$ where $W_t$ is the online model before trial $t$'s label, and the $\alpha$-envelope is swept post-hoc over 11 values with all trajectories causal (the prequential evaluation of Table~\ref{tab:eeg}).
 
 \emph{Backprop references.}
-EEGNet-lite is a small EEGNet variant \citep{lawhern2018eegnet} ($F_1 = 8$, $D = 2$, $F_2 = 16$) trained with Adam.
+EEGNet-lite is a small EEGNet variant \citep{lawhern2018eegnet} ($F_1 = 8$, $D = 2$, $F_2 = 16$) trained with Adam \citep{kingma2015adam}.
 Its hyperparameters (epochs, learning rate) are selected on an 80/20 split of the training session from the grid $(120, 10^{-3})$, $(300, 10^{-3})$, or $(300, 3 \times 10^{-4})$ with no evaluation-session access, then retrained on the full training session and evaluated zero-shot on the evaluation session.
 The WiSE-FT-on-network reference uses this zero-shot model as its frozen endpoint and the causal fine-tuning protocol above.
 
@@ -554,7 +554,7 @@ stage & driver & output \\
 \end{table}
 
 \emph{Environment.}
-Python 3.12 with the committed \texttt{requirements.txt} (jax, numpy, scipy, pandas, scikit-learn, matplotlib, sympy).
+Python 3.12 with the committed \texttt{requirements.txt} (JAX \citep{bradbury2018jax}, numpy, scipy, pandas, scikit-learn, matplotlib, SymPy \citep{meurer2017sympy}).
 Float64 is required for the streaming solves and is enabled by setting \texttt{JAX\_ENABLE\_X64=1} (the drivers set it); a CPU runtime is recommended for the fp64 streams.
 The backprop methods run on the WSL GPU virtual environment: \texttt{scripts/run\_bp\_tta\_2a.sh} and \texttt{scripts/run\_bp\_tta\_2b.sh}, with \texttt{BP\_PYTHON} pointing at that environment's interpreter and GPU extras in \texttt{requirements-wsl.txt}.
 
@@ -569,7 +569,7 @@ The transient strength sweep of Appendix~\ref{app:transient} regenerates with \t
 The grid-default BCI row of Table~\ref{tab:eeg} is the \texttt{hybrid-spar\_kf\_grid} column of \texttt{scripts/bench\_eeg\_tier1.py}; on 2a it is also reproduced by the cheaper \texttt{scripts/eeg\_grid\_default\_probe.py}, which saves \texttt{results/eeg\_griddefault\_2a.csv}.
 
 \emph{Lean.}
-The proof artifact builds with the elan-managed Lean 4 toolchain and Mathlib via lake; the full recipe, including the Mathlib cache fetch, is \texttt{theory/lean/build\_ogd.sh} (Appendix~\ref{app:lean}).
+The proof artifact builds with the elan-managed Lean 4 \citep{demoura2021} toolchain and the Mathlib library \citep{mathlib2020} via lake; the full recipe, including the Mathlib cache fetch, is \texttt{theory/lean/build\_ogd.sh} (Appendix~\ref{app:lean}).
 
 \emph{Artifact layout.}
 Every number in the paper is machine-printed into \texttt{results/*.csv} by the drivers above, and every figure is redrawn from those CSVs: the factorial tables (\texttt{factorial\_*}), the ablation (\texttt{ablation\_spar\_pull.csv}), the false-escalation calibration (\texttt{false\_esc.csv}), the regret scaling (\texttt{regret\_scaling.csv}), the cost table (\texttt{ops\_table.csv}), the EEG tables (\texttt{eeg\_tier1\_2*.csv}, \texttt{spar\_eeg\_2*.csv}, \texttt{bp\_tta\_2*.csv}), the estimator trajectory (\texttt{estimator\_trajectory.csv}), the real electricity stream (\texttt{stream\_electricity.csv}), and the transient strength sweep (\texttt{transient\_test.csv}).
