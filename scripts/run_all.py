@@ -7,6 +7,8 @@ Usage:
   py scripts/run_all.py --list
 
 Steps:
+  data        data preparation (EEG npz cache, optional synthetic/panel data;
+              warn-only, skipped when the source data is absent)
   verify      baseline library sanity (exactness checks) + sympy identities
   factorial   31-config grid chunks (resumable; skips done combos)
   sparkf      append the SPAR-Pull grid arm to the grid
@@ -38,10 +40,15 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 os.environ.setdefault("OMP_NUM_THREADS", "4")
 
-STEPS = ["verify", "factorial", "sparkf", "append", "aggregate", "ablation",
-         "falseesc", "regret", "extra", "ops", "eeg", "bp", "figures"]
+STEPS = ["data", "verify", "factorial", "sparkf", "append", "aggregate",
+         "ablation", "falseesc", "regret", "extra", "ops", "eeg", "bp",
+         "figures"]
+
+DATA_SCRIPTS = ["export_eeg_npz.py", "generate_synthetic.py",
+                "download_finance.py", "download_panel.py"]
 
 EXTRA_SCRIPTS = [
+    ("anchor_profile.py", []),
     ("ablation_spar_kf.py", []),
     ("dead_direction.py", []),
     ("finite_d_conc.py", []),
@@ -65,7 +72,7 @@ APPEND_SCRIPTS = [
 ]
 
 
-def run(cmd, label, env=None):
+def run(cmd, label, env=None, optional=False):
     print(f"\n=== [{label}] {' '.join(cmd)} ===", flush=True)
     t0 = time.perf_counter()
     proc = subprocess.run(cmd, cwd=ROOT, env=env)
@@ -73,7 +80,10 @@ def run(cmd, label, env=None):
     status = "OK" if proc.returncode == 0 else f"FAILED ({proc.returncode})"
     print(f"=== [{label}] {status} in {dt:.0f}s ===", flush=True)
     if proc.returncode != 0:
-        sys.exit(proc.returncode)
+        if optional:
+            print(f"=== [{label}] skipped (optional) ===", flush=True)
+        else:
+            sys.exit(proc.returncode)
     return proc.returncode
 
 
@@ -97,7 +107,10 @@ def main() -> None:
 
     py = sys.executable
     for name in chosen:
-        if name == "verify":
+        if name == "data":
+            for script in DATA_SCRIPTS:
+                run([py, f"scripts/{script}"], f"data:{script}", optional=True)
+        elif name == "verify":
             codes = (run([py, "scripts/rls_baselines.py"], "verify:baselines"),
                      run([py, "scripts/verify_spar_theorems.py"], "verify:sympy"),
                      run([py, "-m", "pytest",
@@ -148,9 +161,16 @@ def main() -> None:
             run([py, "scripts/bench_spar_eeg.py", "--dataset", "2b",
                  "--subjects", "9"], "eeg:spar-legacy-2b")
         elif name == "bp":
-            print("BP arms run on the WSL GPU venv (from the repository root):")
-            print("  wsl -e bash scripts/run_bp_tta_2a.sh")
-            print("  wsl -e bash scripts/run_bp_tta_2b.sh")
+            import shutil
+            wsl = shutil.which("wsl")
+            if wsl:
+                for sh in ("run_bp_tta_2a.sh", "run_bp_tta_2b.sh"):
+                    run([wsl, "-e", "bash", f"scripts/{sh}"], f"bp:{sh}",
+                        optional=True)
+            else:
+                print("BP arms need the WSL GPU venv:")
+                print("  wsl -e bash scripts/run_bp_tta_2a.sh")
+                print("  wsl -e bash scripts/run_bp_tta_2b.sh")
         elif name == "figures":
             run([py, "scripts/make_figures.py"], "figures")
             run([py, "scripts/make_schematic.py"], "figures:schematic")

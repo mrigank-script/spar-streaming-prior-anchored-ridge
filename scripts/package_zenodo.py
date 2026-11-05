@@ -39,14 +39,12 @@ JMLR_PAPER_FILES = ["main.tex", "appendix.tex", "appendix_online.tex",
 # Legacy/one-off files that reach no pipeline stage, README, paper citation, or
 # import, plus binary intermediates and logs.
 EXCLUDE_PATHS = {
-    # scripts/ : orphaned experiments (see audit)
-    "scripts/anchor_profile.py",
+    # scripts/ : orphaned experiments
     "scripts/bench_align2.py",
     "scripts/metrics_suite.py",
     "scripts/pilot_units.py",
     "scripts/package_artifact.py",   # TMLR-only packager, superseded
     # results/ : orphan outputs and stray binaries
-    "results/anchor_profile.csv",
     "results/eeg_tier1_2a.backup.csv",
     "results/eeg_tier1_2b.backup.csv",
 }

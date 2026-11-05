@@ -37,8 +37,8 @@
 \maketitle
 \begin{abstract}%
 Recursive estimators on drifting streams must forget stale data fast enough to track the target, yet slowly enough to average out noise.
-For prior-anchored ridge regression the balance is closed form: per eigen-direction the anchored solve interpolates the data solution and prior with weight $s_i=\rho/(\mu_i+\rho)$.
-We derive the finite-cadence refresh equilibrium: at cadence $k$ the solution lags the pure-leaky path by a closed-form $\Delta_k(s)$, with variance reduced by an explicit factor $\Psi(s,r_k)$.
+In prior-anchored ridge regression, this trade-off admits a closed-form spectral decomposition in which each eigen-direction interpolates between the data solution and the prior with pull weight $s_i=\rho/(\mu_i+\rho)$.
+When the anchor is refreshed every $k$ steps, we show that the moving-frame offset converges to a finite-cadence equilibrium that lags the pure-leaky path by an explicit $\Delta_k(s)$ while reducing estimation variance by a factor $\Psi(s,r_k)$.
 Minimizing the cycle-averaged risk gives $\omega^*=(4\nu^2_\Sigma/c')^{1/3}$, $c'=\sigma^2d_{\mathrm{eff}}(\rho)$, and the plug-in strength $\rho^*=\sigma^2/(n\delta^2)$.
 A random-matrix deterministic equivalent extends both laws to finite dimension, renormalizing the anchor to $\rho_{\mathrm{eff}}=\rho(e^{\zeta q}-1)/(\zeta q)$; it matches simulation within $5\%$ at fixed operating points and within $13\%$ at the method's own, and rank-deficient populations reduce exactly to their active subspace.
 The resulting method, SPAR, calibrates window and strength online from residuals.
@@ -53,11 +53,11 @@ streaming regression, prior-anchored ridge, forgetting factor, drift adaptation,
 \section{Introduction}
 A streaming estimator that never forgets accumulates lag under drift; one that forgets too fast amplifies noise.
 Gradient-based test-time adaptation \citep{sun2020,wang2021tent} resolves this balance implicitly, at the cost of a gradient channel, per-data set hyperparameter selection, and imprecise guarantees.
-For prior-anchored ridge regression the balance is explicit: per eigen-direction the anchored solve decomposes as $W_i - w_i = (1-s_i)(\widehat w_i - w_i) + s_i(G_i - w_i)$ with $s_i = \rho/(\mu_i + \rho)$.
-The algebra is standard: ridge as MAP with a prior-centered penalty \citep{hoerl1970,rasmussen2006,li2018l2sp}. It turns hyperparameter selection into a closed-loop estimation problem, in which measured conflict lowers the anchor strength so fresh data dominates and a rising drift-rate estimate opens the forgetting window.
+Prior-anchored ridge regression makes this balance explicit. In the eigenbasis of the sample covariance, the anchored solution decomposes coordinatewise as $W_i - w_i = (1-s_i)(\widehat w_i - w_i) + s_i(G_i - w_i)$ with pull weight $s_i = \rho/(\mu_i + \rho)$.
+While the underlying MAP algebra with a prior-centered penalty is classical \citep{hoerl1970,rasmussen2006,li2018l2sp}, this spectral view turns hyperparameter selection into a closed-loop estimation problem, in which measured conflict lowers the anchor strength so fresh data dominates and a rising drift-rate estimate opens the forgetting window.
 
-The object of study is the recursion itself.
-The central result is a finite-cadence refresh equilibrium: at cadence $k$ the moving-frame anchor offset follows an affine recursion whose fixed point gives the exact tracking lag and whose variance factor gives the retained noise reduction.
+Rather than proposing an ad hoc tuning heuristic, we analyze the closed-loop dynamics of the resulting recursion.
+At refresh cadence $k$ the moving-frame anchor offset follows an affine recursion whose fixed point gives the exact tracking lag and whose variance factor gives the retained noise reduction.
 Minimizing the cycle-averaged risk yields the optimal forgetting window in closed form.
 A separable-covariance deterministic equivalent then extends the law to finite dimension, where the finite window renormalizes the anchor strength and amplifies the risk by a scalar factor.
 The calibrated method, SPAR, implements these results; the experiments test the theory on synthetic and real streams.
@@ -502,10 +502,10 @@ SPAR-Pull & $0.306$ & $0.100$ & $1.22$ \\
 \end{tabular}
 \end{table}
 
-The stability separation between the two solve forms has a numerical origin.
+The stability gap between the covariance and information forms stems from how each handles unexcited directions.
 In covariance form, reducing $\lambda$ from $0.997$ (nominal window $333$) to $0.99$ (window $100$) raises the 27-configuration mean MSE from $0.555$ to $182$ and then to $1.2 \times 10^6$ (diverging in all $135$ main-grid and $20$ stress-suite runs).
-Two mechanisms contribute: whatever the rank-one downdate cannot see inflates by $(1{-}\omega)^{-t}$.
-On full-rank spectra the unseen component is roundoff: symmetrizing the iterated inverse restores stability at every window tested ($0.61$ at $\lambda = 0.99$, $D = 128$). On rank-deficient spectra it is the dead directions themselves, which inflate deterministically even under symmetrization (stable on all 90 full-rank runs, divergent on 42 of 45 rank-deficient). The anchored information form never iterates an inverse and is immune to both. Neither directional forgetting nor any SPAR method diverged in any configuration (Online Appendix Figure~\ref{fig:cliffapp}).
+Because any component invisible to the rank-one downdate is multiplied by $(1{-}\omega)^{-1}$ at each step, errors grow as $(1{-}\omega)^{-t}$.
+On full-rank spectra, this unstable component arises from asymmetric roundoff in the iterated inverse, and per-step symmetrization restores stability at every window tested ($0.61$ at $\lambda = 0.99$, $D = 128$). On rank-deficient spectra it is the dead directions themselves, which inflate deterministically even under symmetrization (stable on all 90 full-rank runs, divergent on 42 of 45 rank-deficient). The anchored information form never iterates an inverse and is immune to both. Neither directional forgetting nor any SPAR method diverged in any configuration (Online Appendix Figure~\ref{fig:cliffapp}).
 
 Exponentiated-gradient weights over $K = 5$ expert paths (batch-solved leaky windows plus the frozen anchor), with the anytime rate $\varsigma_t = \sqrt{\ln K / S_t}$, attain $0.358/1.27$ with no tuning, within $17\%$ of the plug-in rule; on oscillating streams the mixture is within $2.4\%$ of the best single window ($6.36$ vs.\ $6.21$).
 Adding the SPAR-Pull trajectory itself as a sixth expert (SPAR-EG$^+$) attains $0.297$ mean MSE ($1.22$ worst-case), $2.9\%$ below the plug-in method, so the Proposition~\ref{prop:ocowrap}(ii) guarantee holds relative to a pool containing the plug-in method. The gain appears in 11 of 27 configurations (paired $t$ $p = 0.032$; Wilcoxon $p = 0.61$).
@@ -572,7 +572,7 @@ Lean artifact & algebraic core, refresh chain, regret bounds, coupled contractio
 \end{table}
 
 \section{Conclusion}
-The finite-cadence refresh equilibrium is the central object: it gives the tracking lag and variance reduction of an anchored stream in closed form, and the optimal forgetting window follows by minimizing the cycle-averaged risk.
+The finite-cadence refresh equilibrium characterizes both the tracking lag and the variance reduction of prior-anchored streaming ridge regression in closed form, and the optimal forgetting window follows by minimizing the cycle-averaged risk.
 The random-matrix correction extends the law to finite dimension, where the anchor is renormalized by the finite window; the correction is accurate on full-rank and rank-deficient spectra, the latter reducing exactly to the active subspace.
 The Lean artifact formalizes the algebraic core, the refresh chain, the regret bounds, and the coupled contraction.
 
