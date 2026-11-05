@@ -8,8 +8,12 @@ pdflatex -interaction=nonstopmode -output-directory=build main.tex
 pdflatex -interaction=nonstopmode -output-directory=build appendix_online.tex
 bibtex build\main
 bibtex build\appendix_online
-pdflatex -interaction=nonstopmode -output-directory=build main.tex
+rem Three interleaved passes so the xr cross-references and the LastPage
+rem header (the JMLR page range) settle between the two documents.
 pdflatex -interaction=nonstopmode -output-directory=build main.tex
 pdflatex -interaction=nonstopmode -output-directory=build appendix_online.tex
+pdflatex -interaction=nonstopmode -output-directory=build main.tex
+pdflatex -interaction=nonstopmode -output-directory=build appendix_online.tex
+pdflatex -interaction=nonstopmode -output-directory=build main.tex
 pdflatex -interaction=nonstopmode -output-directory=build appendix_online.tex
 echo Done: build\main.pdf and build\appendix_online.pdf
