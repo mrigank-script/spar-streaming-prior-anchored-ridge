@@ -5,7 +5,8 @@ anchor is the warm-start from the calibration session (NOT an oracle),
 the stream is short (288 trials), and drift is physiological
 (non-stationarity within/between sessions).
 
-Arms (all closed-form, predict-then-update, supervised online):
+Arms (all closed-form, predict-then-update, supervised online; the *-EA
+features are whitened transductively over the whole test session):
   warm         : no streaming (upper reference for frozen models)
   pam_g0.1     : existing fixed-anchor arm  (gamma=0.1, ridge=0.01, alpha=1)
   pam_g1.0     : same with gamma=1 (the gamma=1 design principle)

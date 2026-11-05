@@ -173,7 +173,7 @@ def main() -> None:
     for name in rows[0]:
         bal = np.array([r[name][0] for r in rows])
         kap = np.array([r[name][1] for r in rows])
-        print(f"{name:<12} balanced-acc {bal.mean():.3f} ± {bal.std():.3f} | kappa {kap.mean():.3f} ± {kap.std():.3f}")
+        print(f"{name:<12} balanced-acc {bal.mean():.3f} ± {bal.std(ddof=1):.3f} | kappa {kap.mean():.3f} ± {kap.std(ddof=1):.3f}")
 
     import pandas as pd
     from scipy import stats

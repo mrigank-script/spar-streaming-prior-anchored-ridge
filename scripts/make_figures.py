@@ -304,11 +304,12 @@ def main():
     fig_noise_floor(main_df)
     fig_prior_immunity(main_df)
     fig_regret()
-    for old in ("F1_lambda_cliff.png", "F2_two_dials.png", "F3_noise_floor.png",
-                "F4_prior_immunity.png", "F5_regret_scaling.png"):
-        p = FIG / old
-        if p.exists():
-            p.unlink()
+    for stem in ("F1_lambda_cliff", "F2_two_dials", "F3_noise_floor",
+                 "F4_prior_immunity", "F5_regret_scaling"):
+        for ext in (".png", ".pdf"):
+            p = FIG / f"{stem}{ext}"
+            if p.exists():
+                p.unlink()
     stray = RES / "regret_scaling.png"
     if stray.exists():
         stray.unlink()
