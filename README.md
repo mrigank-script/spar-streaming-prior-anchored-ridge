@@ -214,3 +214,8 @@ python3 -m pytest tests -q   # Linux / macOS
 
 All tests pass; the EEG-specific cases skip automatically when `mne` or
 `pyriemann` is not installed.
+
+## 8. License
+
+Released under the MIT License; see [`LICENSE`](LICENSE). The manuscript text
+under `paper/jmlr/` follows the JMLR publication license (CC-BY) on publication.
