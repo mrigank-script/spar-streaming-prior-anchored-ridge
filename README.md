@@ -1,5 +1,7 @@
 # Streaming Prior-Anchored Ridge (SPAR)
 
+[![arXiv](https://img.shields.io/badge/arXiv-2611.14586-b31b1b.svg)](https://arxiv.org/abs/2611.14586)
+
 Closed-form streaming heads for drifting data streams: a ridge solve anchored
 to a prior, with two quantities the method calibrates online from its own
 residuals: the anchor strength and the forgetting window. The repository also
@@ -8,6 +10,8 @@ contains the formalization of the proof core in Lean 4.
 This is the companion code for the JMLR manuscript in `paper/jmlr/`
 (`paper/jmlr/main.tex`, built with `paper/jmlr/build.cmd`). Every number and
 figure in the paper is machine-printed into `results/` by the scripts below.
+The combined preprint, main text plus online appendix, is at
+<https://arxiv.org/abs/2611.14586>.
 
 Version 0.2.0; see `CHANGELOG.md` for the upgrade cycle and `VERSION` for the
 released version.
