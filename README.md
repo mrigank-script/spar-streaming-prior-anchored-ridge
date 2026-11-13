@@ -86,6 +86,12 @@ default `~/mne_data`) under `MNE-bnci-data/~bci/database/`. The EEG results in
 above once to regenerate it, after which the EEG results rerun without the
 download.
 
+Session protocol: each subject is a separate run, and the online calibration
+starts fresh at the first evaluation trial (anchor strength `rho = 0.1`,
+window at `w_min`); the training session supplies only the warm anchor and
+residual scale. For 2a the stream is `1test`; for 2b it is `3test` and `4test`
+concatenated, so `rho` and `w` run continuously across that boundary.
+
 ### Time-series panels — Electricity, Traffic, Weather, ETT, Exchange
 
 Download the well-preprocessed TSLib/Autoformer files once and drop them into
